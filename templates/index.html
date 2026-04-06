@@ -83,6 +83,7 @@
         .pres-stat-label { font-size: 0.72rem; color: var(--text-secondary); }
         .pres-stat-values { display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; font-weight: 700; }
         .pres-stat-arrow { font-size: 0.6rem; }
+        .pres-stat-tag { font-size: 0.55rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); }
         .pres-stat-change { font-size: 0.62rem; font-weight: 600; padding: 0.1rem 0.35rem; border-radius: 50px; }
         .change-up { color: var(--red); background: rgba(255,82,82,0.1); }
         .change-down { color: var(--green); background: rgba(0,230,118,0.1); }
@@ -204,13 +205,23 @@
                     </div>
                 </div>
                 <div class="pres-body">
+                    <!-- Column Headers -->
+                    <div class="pres-stat-row" style="border-bottom:1px solid var(--border);padding-bottom:0.3rem;margin-bottom:0.15rem;">
+                        <span class="pres-stat-label" style="font-weight:700;"></span>
+                        <div class="pres-stat-values">
+                            <span class="pres-stat-tag" style="color:var(--gold);">Inherited</span>
+                            <span style="width:0.6rem;"></span>
+                            <span class="pres-stat-tag" style="color:var(--blue);">Left</span>
+                            <span class="pres-stat-tag">Change</span>
+                        </div>
+                    </div>
                     <!-- Total Debt -->
                     <div class="pres-stat-row">
                         <span class="pres-stat-label"><i class="bi bi-graph-up me-1"></i>Total Debt</span>
                         <div class="pres-stat-values">
-                            <span>${{ '%.0f'|format(ps.debt_inherited) }}B</span>
+                            <span style="color:var(--gold);">${{ '%.0f'|format(ps.debt_inherited) }}B</span>
                             <i class="bi bi-arrow-right pres-stat-arrow" style="color:var(--text-tertiary);"></i>
-                            <span>${{ '%.0f'|format(ps.debt_left) }}B</span>
+                            <span style="color:var(--blue);">${{ '%.0f'|format(ps.debt_left) }}B</span>
                             <span class="pres-stat-change {% if ps.debt_change > 0 %}change-up{% else %}change-down{% endif %}">
                                 {{ '+' if ps.debt_change > 0 }}${{ '%.0f'|format(ps.debt_change) }}B
                             </span>
@@ -220,9 +231,9 @@
                     <div class="pres-stat-row">
                         <span class="pres-stat-label"><i class="bi bi-safe me-1"></i>Reserves</span>
                         <div class="pres-stat-values">
-                            <span>${{ '%.0f'|format(ps.reserves_start) }}B</span>
+                            <span style="color:var(--gold);">${{ '%.0f'|format(ps.reserves_start) }}B</span>
                             <i class="bi bi-arrow-right pres-stat-arrow" style="color:var(--text-tertiary);"></i>
-                            <span>${{ '%.0f'|format(ps.reserves_end) }}B</span>
+                            <span style="color:var(--blue);">${{ '%.0f'|format(ps.reserves_end) }}B</span>
                             <span class="pres-stat-change {% if ps.reserves_change > 0 %}change-pos{% else %}change-neg{% endif %}">
                                 {{ '+' if ps.reserves_change > 0 }}${{ '%.0f'|format(ps.reserves_change) }}B
                             </span>
@@ -232,9 +243,9 @@
                     <div class="pres-stat-row">
                         <span class="pres-stat-label"><i class="bi bi-currency-exchange me-1"></i>USD/NGN</span>
                         <div class="pres-stat-values">
-                            <span>&#8358;{{ '%.0f'|format(ps.fx_start) }}</span>
+                            <span style="color:var(--gold);">&#8358;{{ '%.0f'|format(ps.fx_start) }}</span>
                             <i class="bi bi-arrow-right pres-stat-arrow" style="color:var(--text-tertiary);"></i>
-                            <span>&#8358;{{ '%.0f'|format(ps.fx_end) }}</span>
+                            <span style="color:var(--blue);">&#8358;{{ '%.0f'|format(ps.fx_end) }}</span>
                             <span class="pres-stat-change change-up">+{{ '%.0f'|format(ps.fx_change_pct) }}%</span>
                         </div>
                     </div>
@@ -242,9 +253,9 @@
                     <div class="pres-stat-row">
                         <span class="pres-stat-label"><i class="bi bi-fuel-pump me-1"></i>Petrol</span>
                         <div class="pres-stat-values">
-                            <span>&#8358;{{ '%.0f'|format(ps.petrol_start) }}</span>
+                            <span style="color:var(--gold);">&#8358;{{ '%.0f'|format(ps.petrol_start) }}</span>
                             <i class="bi bi-arrow-right pres-stat-arrow" style="color:var(--text-tertiary);"></i>
-                            <span>&#8358;{{ '%.0f'|format(ps.petrol_end) }}</span>
+                            <span style="color:var(--blue);">&#8358;{{ '%.0f'|format(ps.petrol_end) }}</span>
                             <span class="pres-stat-change change-up">
                                 +{{ '%.0f'|format((ps.petrol_end - ps.petrol_start) / ps.petrol_start * 100 if ps.petrol_start else 0) }}%
                             </span>
@@ -254,9 +265,9 @@
                     <div class="pres-stat-row">
                         <span class="pres-stat-label"><i class="bi bi-bar-chart-fill me-1"></i>GDP</span>
                         <div class="pres-stat-values">
-                            <span>${{ '%.0f'|format(ps.gdp_start) }}B</span>
+                            <span style="color:var(--gold);">${{ '%.0f'|format(ps.gdp_start) }}B</span>
                             <i class="bi bi-arrow-right pres-stat-arrow" style="color:var(--text-tertiary);"></i>
-                            <span>${{ '%.0f'|format(ps.gdp_end) }}B</span>
+                            <span style="color:var(--blue);">${{ '%.0f'|format(ps.gdp_end) }}B</span>
                             {% set gdp_change = ps.gdp_end - ps.gdp_start %}
                             <span class="pres-stat-change {% if gdp_change > 0 %}change-pos{% else %}change-neg{% endif %}">
                                 {{ '+' if gdp_change > 0 }}${{ '%.0f'|format(gdp_change) }}B
