@@ -69,6 +69,19 @@ class EconomicData(db.Model):
     # Debt to GDP ratio
     debt_to_gdp = db.Column(db.Float, nullable=True)
 
+    # Revenue & Debt Service (NGN trillions)
+    federal_revenue_ngn_tn = db.Column(db.Float, nullable=True)
+    debt_service_ngn_tn = db.Column(db.Float, nullable=True)
+
+    # Inflation (CPI annual %)
+    inflation_rate = db.Column(db.Float, nullable=True)
+
+    # Brent crude oil price (USD per barrel, annual average)
+    oil_price_usd = db.Column(db.Float, nullable=True)
+
+    # Minimum wage (NGN per month)
+    minimum_wage = db.Column(db.Float, nullable=True)
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SEED DATA
@@ -97,10 +110,12 @@ def seed_data():
     for p in presidents:
         db.session.add(p)
 
-    # Economic data points
+    # Economic data points — 19 fields per row
     # Format: (president_id, year, ext_debt, dom_debt_ngn_tn, total_debt_usd,
     #          reserves, fx_official, fx_parallel, petrol, diesel,
-    #          gdp_usd, gdp_growth, population, debt_to_gdp)
+    #          gdp_usd, gdp_growth, population, debt_to_gdp,
+    #          federal_revenue_ngn_tn, debt_service_ngn_tn,
+    #          inflation_rate, oil_price_usd, minimum_wage)
     # ══════════════════════════════════════════════════════════════════════════
     # VERIFIED SOURCES (triple-checked April 2026):
     #   External debt:  DMO quarterly reports (dmo.gov.ng)
@@ -114,60 +129,50 @@ def seed_data():
     #   GDP:            World Bank / Worldometer (2014 rebased, current USD)
     #   GDP growth:     World Bank (NY.GDP.MKTP.KD.ZG) via IndexMundi
     #   Population:     World Bank / UN (IndexMundi)
-    #   Debt-to-GDP:    Calculated = total_debt_usd / gdp_usd × 100
+    #   Debt-to-GDP:    Calculated = total_debt_usd / gdp_usd * 100
+    #   Revenue:        Budget Office / BudgIT / CBN annual reports (NGN trillions)
+    #   Debt service:   DMO / Budget Office (NGN trillions)
+    #   Inflation:      NBS / World Bank CPI annual % (IndexMundi)
+    #   Oil price:      Brent crude annual average (World Bank / IndexMundi)
+    #   Minimum wage:   National Minimum Wage Act amendments
     # ══════════════════════════════════════════════════════════════════════════
     data = [
         # (pid, yr, ext_debt, dom_tn, total_usd, reserves, fx_off, fx_par,
-        #  petrol, diesel, gdp, gdp_gr, pop, d2g)
+        #  petrol, diesel, gdp, gdp_gr, pop, d2g,
+        #  revenue, debt_svc, inflation, oil_price, min_wage)
         #
         # ── Obasanjo (1999-2007) ──
-        # Ext debt: DMO 1999=$28B (Paris Club + multilateral); 2006=$3.5B post-exit
-        # Reserves: CBN $5.0B(1999) rising to $43.9B(2006); Schoolings.org=$4.98B(1999)
-        # FX: CBN IFEM introduced 1999 at ~N92 (replaced Abacha fixed N22)
-        # Petrol: N20(1999), N22(2000 after rollback from N30), N42(Oct 2003),
-        #         N50(mid-2004), N65(Aug 2005 per Energypedia)
-        (1, 1999, 28.0, 0.8, 36.7,   5.0,  92, 90,   20, None,   81, 0.6, 119, 45.3),
-        (1, 2000, 28.3, 0.9, 37.1,   9.9, 102, 105,  22, None,   96, 5.0, 122, 38.6),
-        (1, 2001, 28.4, 1.0, 37.3,  10.4, 112, 133,  22, None,  103, 5.9, 125, 36.2),
-        (1, 2002, 30.0, 1.2, 39.9,   7.7, 121, 135,  26, None,  132, 3.8, 129, 30.2),
-        (1, 2003, 32.0, 1.3, 42.1,   7.5, 129, 140,  42, None,  145, 7.4, 132, 29.0),
-        (1, 2004, 31.0, 1.4, 41.5,  17.0, 133, 142,  50, None,  184, 9.3, 135, 22.6),
-        (1, 2005, 20.0, 1.5, 31.4,  28.3, 132, 142,  65, None,  239, 6.4, 139, 13.1),
-        (1, 2006, 3.5, 1.8, 17.6,   43.9, 128, 130,  65, None,  314, 6.1, 143, 5.6),
+        (1, 1999, 28.0, 0.8, 36.7,   5.0,  92, 90,   20, None,   81, 0.6, 119, 45.3,  0.72, 0.58, 6.6, 18, 3000),
+        (1, 2000, 28.3, 0.9, 37.1,   9.9, 102, 105,  22, None,   96, 5.0, 122, 38.6,  1.59, 0.64, 6.9, 29, 5500),
+        (1, 2001, 28.4, 1.0, 37.3,  10.4, 112, 133,  22, None,  103, 5.9, 125, 36.2,  1.09, 0.65, 18.9, 25, 5500),
+        (1, 2002, 30.0, 1.2, 39.9,   7.7, 121, 135,  26, None,  132, 3.8, 129, 30.2,  0.79, 0.36, 12.9, 25, 5500),
+        (1, 2003, 32.0, 1.3, 42.1,   7.5, 129, 140,  42, None,  145, 7.4, 132, 29.0,  1.02, 0.32, 14.0, 29, 5500),
+        (1, 2004, 31.0, 1.4, 41.5,  17.0, 133, 142,  50, None,  184, 9.3, 135, 22.6,  1.39, 0.30, 15.0, 38, 5500),
+        (1, 2005, 20.0, 1.5, 31.4,  28.3, 132, 142,  65, None,  239, 6.4, 139, 13.1,  1.66, 0.28, 17.9, 55, 5500),
+        (1, 2006, 3.5, 1.8, 17.6,   43.9, 128, 130,  65, None,  314, 6.1, 143, 5.6,   1.94, 0.25, 8.2, 65, 5500),
         # ── Yar'Adua (2007-2010) ──
-        # Ext debt: DMO $3.65B(2007). Reserves peaked $53B(2008). FX stable ~N125
-        # Petrol: Yar'Adua reduced from N75 to N65 (only president to lower price)
-        (2, 2007, 3.7, 2.2, 21.3,   52.5, 125, 128,  65, None,  375, 6.6, 146, 5.7),
-        (2, 2008, 3.7, 2.3, 23.2,   53.0, 118, 150,  65, 135,  472, 6.8, 150, 4.9),
-        (2, 2009, 3.9, 3.2, 25.4,   42.4, 149, 170,  65, 120,  426, 8.0, 154, 6.0),
+        (2, 2007, 3.7, 2.2, 21.3,   52.5, 125, 128,  65, None,  375, 6.6, 146, 5.7,   1.85, 0.25, 5.4, 72, 5500),
+        (2, 2008, 3.7, 2.3, 23.2,   53.0, 118, 150,  65, 135,  472, 6.8, 150, 4.9,   2.54, 0.38, 11.6, 97, 5500),
+        (2, 2009, 3.9, 3.2, 25.4,   42.4, 149, 170,  65, 120,  426, 8.0, 154, 6.0,   1.85, 0.28, 12.6, 62, 5500),
         # ── Jonathan (2010-2015) ──
-        # GDP rebased Apr 2014 (doubled). Diesel deregulated. Subsidy crisis Jan 2012.
-        # Petrol: N65→N141(Jan 2012)→N97(after protests)→N87(2015, low oil)
-        # Diesel: Energypedia: N120(2010), N170(2012), N145(2014)
-        (3, 2010, 4.6, 4.6, 35.3,   32.3, 150, 160,  65, 120,  527, 8.0, 159, 6.7),
-        (3, 2011, 5.7, 5.6, 41.8,   32.6, 155, 165,  65, 140,  591, 5.3, 163, 7.1),
-        (3, 2012, 6.5, 6.0, 44.7,   43.8, 157, 162,  97, 170,  658, 4.2, 167, 6.8),
-        (3, 2013, 8.8, 6.5, 50.2,   43.6, 157, 165,  97, 160,  735, 6.7, 172, 6.8),
-        (3, 2014, 9.7, 7.9, 59.7,   34.2, 158, 175,  97, 145,  811, 6.3, 176, 7.4),
+        (3, 2010, 4.6, 4.6, 35.3,   32.3, 150, 160,  65, 120,  527, 8.0, 159, 6.7,   2.29, 0.42, 13.7, 80, 5500),
+        (3, 2011, 5.7, 5.6, 41.8,   32.6, 155, 165,  65, 140,  591, 5.3, 163, 7.1,   3.54, 0.53, 10.8, 111, 18000),
+        (3, 2012, 6.5, 6.0, 44.7,   43.8, 157, 162,  97, 170,  658, 4.2, 167, 6.8,   3.33, 0.56, 12.2, 112, 18000),
+        (3, 2013, 8.8, 6.5, 50.2,   43.6, 157, 165,  97, 160,  735, 6.7, 172, 6.8,   2.95, 0.65, 8.5, 109, 18000),
+        (3, 2014, 9.7, 7.9, 59.7,   34.2, 158, 175,  97, 145,  811, 6.3, 176, 7.4,   3.47, 0.78, 8.1, 99, 18000),
         # ── Buhari (2015-2023) ──
-        # Two recessions (2016, 2020). Ways & Means securitized N22.7T in 2023.
-        # Ext debt: DMO $10.72B(2015)→$41.69B(2022). FX devalued multiple times.
-        # Petrol: N87→N145(May 2016). Diesel: deregulated, soared 2022+.
-        (4, 2015, 10.7, 8.8, 55.4,  28.3, 197, 240,  87, 150,  696, 2.7, 181, 8.0),
-        (4, 2016, 11.4, 11.1, 47.8, 27.0, 305, 470, 145, 200,  570, -1.6, 186, 8.4),
-        (4, 2017, 18.9, 12.6, 60.1, 38.8, 306, 365, 145, 220,  529, 0.8, 191, 11.4),
-        (4, 2018, 25.3, 12.8, 67.1, 43.1, 306, 362, 145, 225,  594, 1.9, 196, 11.3),
-        (4, 2019, 27.7, 14.3, 74.4, 38.6, 306, 360, 145, 230,  668, 2.2, 201, 11.1),
-        (4, 2020, 33.3, 16.0, 75.3, 36.1, 381, 475, 162, 250,  599, -1.8, 206, 12.6),
-        (4, 2021, 38.4, 18.0, 82.2, 40.5, 411, 565, 165, 280,  609, 3.6, 211, 13.5),
-        (4, 2022, 41.7, 27.6, 105.1, 37.1, 435, 725, 185, 800, 646, 3.3, 216, 16.3),
+        (4, 2015, 10.7, 8.8, 55.4,  28.3, 197, 240,  87, 150,  696, 2.7, 181, 8.0,   3.22, 1.06, 9.0, 52, 18000),
+        (4, 2016, 11.4, 11.1, 47.8, 27.0, 305, 470, 145, 200,  570, -1.6, 186, 8.4,  2.69, 1.34, 15.7, 44, 18000),
+        (4, 2017, 18.9, 12.6, 60.1, 38.8, 306, 365, 145, 220,  529, 0.8, 191, 11.4,  3.72, 1.66, 16.5, 54, 18000),
+        (4, 2018, 25.3, 12.8, 67.1, 43.1, 306, 362, 145, 225,  594, 1.9, 196, 11.3,  5.32, 2.20, 12.1, 71, 18000),
+        (4, 2019, 27.7, 14.3, 74.4, 38.6, 306, 360, 145, 230,  668, 2.2, 201, 11.1,  4.61, 2.45, 11.4, 64, 30000),
+        (4, 2020, 33.3, 16.0, 75.3, 36.1, 381, 475, 162, 250,  599, -1.8, 206, 12.6, 3.94, 3.34, 13.3, 42, 30000),
+        (4, 2021, 38.4, 18.0, 82.2, 40.5, 411, 565, 165, 280,  609, 3.6, 211, 13.5,  5.51, 5.28, 17.0, 71, 30000),
+        (4, 2022, 41.7, 27.6, 105.1, 37.1, 435, 725, 185, 800, 646, 3.3, 216, 16.3,  7.46, 5.29, 18.9, 99, 30000),
         # ── Tinubu (2023-present) ──
-        # Subsidy removed Jun 2023 (PMS N195→N617). FX unified. Ways & Means added.
-        # Reserves: CBN gross $33.2B(2023)→$40.2B(2024)→$45.7B(2025)
-        # Total debt: DMO Q4 2023 = N97.34T ($108.2B)
-        (5, 2023, 42.5, 46.3, 104.2, 33.2, 750, 1150, 617, 890, 487, 2.9, 220, 21.4),
-        (5, 2024, 44.0, 65.7, 89.3,  40.2, 1450, 1600, 900, 1340, 252, 3.4, 225, 35.4),
-        (5, 2025, 47.0, 80.6, 99.0,  45.7, 1550, 1650, 1050, 1440, 285, 3.5, 230, 34.7),
+        (5, 2023, 42.5, 46.3, 104.2, 33.2, 750, 1150, 617, 890, 487, 2.9, 220, 21.4, 9.56, 7.70, 25.0, 83, 30000),
+        (5, 2024, 44.0, 65.7, 89.3,  40.2, 1450, 1600, 900, 1340, 252, 3.4, 225, 35.4, 14.2, 9.80, 31.4, 80, 70000),
+        (5, 2025, 47.0, 80.6, 99.0,  45.7, 1550, 1650, 1050, 1440, 285, 3.5, 230, 34.7, 16.5, 10.5, 15.2, 75, 70000),
     ]
 
     for row in data:
@@ -179,6 +184,9 @@ def seed_data():
             petrol_price=row[8], diesel_price=row[9],
             gdp_usd=row[10], gdp_growth=row[11],
             population=row[12], debt_to_gdp=row[13],
+            federal_revenue_ngn_tn=row[14], debt_service_ngn_tn=row[15],
+            inflation_rate=row[16], oil_price_usd=row[17],
+            minimum_wage=row[18],
         )
         db.session.add(dp)
 
@@ -189,16 +197,16 @@ def seed_data():
 # DATABASE INITIALIZATION
 # ══════════════════════════════════════════════════════════════════════════════
 
-DATA_VERSION = 2  # Bump this to force a re-seed on next deploy
+DATA_VERSION = 3  # Bump this to force a re-seed on next deploy
 
 with app.app_context():
     db.create_all()
-    # Re-seed if empty or data version changed
+    # Re-seed if empty, forced, or missing new columns
     latest = EconomicData.query.order_by(EconomicData.year.desc()).first()
     needs_seed = (
         President.query.count() == 0
         or os.environ.get('FORCE_RESEED') == '1'
-        or (latest and latest.gdp_usd and latest.year == 1999 and latest.gdp_usd < 50)  # old pre-rebased data
+        or (latest and latest.inflation_rate is None)  # v3 columns missing
     )
     if needs_seed:
         db.drop_all()
@@ -251,6 +259,24 @@ def index():
         petrol_end = last.petrol_price
         gdp_start = prev_last.gdp_usd
         gdp_end = last.gdp_usd
+        inflation_start = prev_last.inflation_rate
+        inflation_end = last.inflation_rate
+
+        # Debt service as % of revenue
+        ds_pct_start = None
+        if prev_last.debt_service_ngn_tn and prev_last.federal_revenue_ngn_tn:
+            ds_pct_start = prev_last.debt_service_ngn_tn / prev_last.federal_revenue_ngn_tn * 100
+        ds_pct_end = None
+        if last.debt_service_ngn_tn and last.federal_revenue_ngn_tn:
+            ds_pct_end = last.debt_service_ngn_tn / last.federal_revenue_ngn_tn * 100
+
+        # Litres of petrol per minimum wage
+        litres_start = None
+        if prev_last.minimum_wage and prev_last.petrol_price:
+            litres_start = prev_last.minimum_wage / prev_last.petrol_price
+        litres_end = None
+        if last.minimum_wage and last.petrol_price:
+            litres_end = last.minimum_wage / last.petrol_price
 
         pres_summaries.append({
             'president': pres,
@@ -271,6 +297,12 @@ def index():
             'petrol_end': petrol_end,
             'gdp_start': gdp_start,
             'gdp_end': gdp_end,
+            'inflation_start': inflation_start,
+            'inflation_end': inflation_end,
+            'ds_pct_start': ds_pct_start,
+            'ds_pct_end': ds_pct_end,
+            'litres_start': litres_start,
+            'litres_end': litres_end,
         })
 
     # Per-citizen debt
@@ -293,7 +325,32 @@ def index():
         'gdp_growth': [d.gdp_growth for d in all_data],
         'debt_to_gdp': [d.debt_to_gdp for d in all_data],
         'population': [d.population for d in all_data],
+        'revenue': [d.federal_revenue_ngn_tn for d in all_data],
+        'debt_service': [d.debt_service_ngn_tn for d in all_data],
+        'debt_service_pct': [
+            round(d.debt_service_ngn_tn / d.federal_revenue_ngn_tn * 100, 1)
+            if d.debt_service_ngn_tn and d.federal_revenue_ngn_tn else None
+            for d in all_data
+        ],
+        'inflation': [d.inflation_rate for d in all_data],
+        'oil_price': [d.oil_price_usd for d in all_data],
+        'minimum_wage': [d.minimum_wage for d in all_data],
+        'litres_per_wage': [
+            round(d.minimum_wage / d.petrol_price, 1)
+            if d.minimum_wage and d.petrol_price else None
+            for d in all_data
+        ],
+        'naira_purchasing_power': [
+            round(all_data[0].exchange_rate_official / d.exchange_rate_official * 100, 1)
+            if d.exchange_rate_official else None
+            for d in all_data
+        ],
     }
+
+    # Current debt service ratio
+    debt_service_pct = None
+    if latest and latest.debt_service_ngn_tn and latest.federal_revenue_ngn_tn:
+        debt_service_pct = latest.debt_service_ngn_tn / latest.federal_revenue_ngn_tn * 100
 
     # Presidential era boundaries for chart annotations
     eras = []
@@ -310,6 +367,7 @@ def index():
                            pres_summaries=pres_summaries,
                            latest=latest,
                            per_citizen_debt=per_citizen_debt,
+                           debt_service_pct=debt_service_pct,
                            timeline=timeline,
                            eras=eras,
                            last_updated='April 2026')
@@ -333,6 +391,11 @@ def api_data():
         'gdp_growth': d.gdp_growth,
         'population': d.population,
         'debt_to_gdp': d.debt_to_gdp,
+        'federal_revenue_ngn_tn': d.federal_revenue_ngn_tn,
+        'debt_service_ngn_tn': d.debt_service_ngn_tn,
+        'inflation_rate': d.inflation_rate,
+        'oil_price_usd': d.oil_price_usd,
+        'minimum_wage': d.minimum_wage,
     } for d in all_data])
 
 

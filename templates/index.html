@@ -20,7 +20,7 @@
             --text-primary: #f0f0f5; --text-secondary: rgba(255,255,255,0.55);
             --text-tertiary: rgba(255,255,255,0.3);
             --green: #00e676; --red: #ff5252; --gold: #ffd740;
-            --blue: #448aff; --orange: #ff9100;
+            --blue: #448aff; --orange: #ff9100; --purple: #b388ff;
             --ng-green: #009401; --ng-white: #ffffff;
             --radius: 12px; --radius-sm: 8px;
         }
@@ -34,7 +34,7 @@
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-primary); line-height: 1.5; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
 
-        /* ═══ Header ═══ */
+        /* Header */
         .header { background: linear-gradient(180deg, #0d1a0d 0%, var(--bg) 100%); border-bottom: 1px solid var(--border); padding: 1.5rem 0; position: relative; overflow: hidden; }
         .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--ng-green), var(--gold), var(--ng-green)); }
         .header-content { display: flex; align-items: center; justify-content: space-between; }
@@ -46,29 +46,26 @@
         .theme-toggle { background: none; border: 1px solid var(--border); border-radius: 50px; padding: 0.4rem 0.75rem; color: var(--text-secondary); cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
         .theme-toggle:hover { border-color: var(--ng-green); color: var(--ng-green); }
 
-        /* ═══ Debt Ticker ═══ */
+        /* Ticker */
         .ticker-section { padding: 2rem 0 1.5rem; }
-        .ticker-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .ticker-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
         .ticker-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; text-align: center; position: relative; overflow: hidden; transition: border-color 0.3s, transform 0.2s; }
         .ticker-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
         .ticker-card .tc-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-tertiary); margin-bottom: 0.5rem; }
-        .ticker-card .tc-value { font-family: 'JetBrains Mono', monospace; font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; }
+        .ticker-card .tc-value { font-family: 'JetBrains Mono', monospace; font-size: 1.6rem; font-weight: 800; letter-spacing: -1px; }
         .ticker-card .tc-sub { font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.35rem; }
         .ticker-card .tc-accent { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
-        .tc-green { color: var(--green); }
-        .tc-red { color: var(--red); }
-        .tc-gold { color: var(--gold); }
-        .tc-blue { color: var(--blue); }
-        .tc-orange { color: var(--orange); }
+        .tc-green { color: var(--green); } .tc-red { color: var(--red); } .tc-gold { color: var(--gold); }
+        .tc-blue { color: var(--blue); } .tc-orange { color: var(--orange); } .tc-purple { color: var(--purple); }
 
-        /* ═══ Section ═══ */
+        /* Section */
         .section { padding: 2rem 0; }
         .section-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; }
         .section-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
         .section-title { font-size: 1rem; font-weight: 700; }
         .section-sub { font-size: 0.72rem; color: var(--text-tertiary); }
 
-        /* ═══ Presidential Cards ═══ */
+        /* Presidential Cards */
         .pres-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1rem; }
         .pres-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: all 0.3s; }
         .pres-card:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
@@ -91,7 +88,7 @@
         .change-neg { color: var(--red); background: rgba(255,82,82,0.1); }
         .pres-note { font-size: 0.68rem; color: var(--text-tertiary); padding: 0.6rem 1.25rem; background: rgba(255,255,255,0.02); border-top: 1px solid var(--border); font-style: italic; }
 
-        /* ═══ Chart Cards ═══ */
+        /* Chart Cards */
         .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 1rem; }
         .chart-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
         .chart-head { padding: 1rem 1.25rem 0; display: flex; align-items: flex-start; justify-content: space-between; }
@@ -107,19 +104,27 @@
             .ticker-grid { grid-template-columns: 1fr; }
         }
 
-        /* ═══ Footer ═══ */
+        /* Footer */
         .footer { border-top: 1px solid var(--border); padding: 1.5rem 0; text-align: center; font-size: 0.7rem; color: var(--text-tertiary); }
         .footer a { color: var(--ng-green); text-decoration: none; }
         .footer-brand { font-weight: 700; font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 0.25rem; }
 
-        /* ═══ Utilities ═══ */
+        /* Utilities */
         .mono { font-family: 'JetBrains Mono', monospace; }
         .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+
+        /* What Could the Debt Buy */
+        .debt-buy-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem; }
+        .debt-buy-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; text-align: center; transition: all 0.3s; }
+        .debt-buy-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+        .debt-buy-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .debt-buy-count { font-family: 'JetBrains Mono', monospace; font-size: 1.4rem; font-weight: 800; color: var(--gold); }
+        .debt-buy-label { font-size: 0.72rem; color: var(--text-secondary); margin-top: 0.25rem; }
     </style>
 </head>
 <body>
 
-<!-- ═══ HEADER ═══ -->
+<!-- HEADER -->
 <header class="header">
     <div class="container">
         <div class="header-content">
@@ -137,7 +142,7 @@
     </div>
 </header>
 
-<!-- ═══ LIVE TICKER ═══ -->
+<!-- LIVE TICKER -->
 <section class="ticker-section">
     <div class="container">
         <div class="ticker-grid">
@@ -177,11 +182,31 @@
                 <div class="tc-value" style="color:{% if latest.debt_to_gdp > 40 %}var(--red){% elif latest.debt_to_gdp > 25 %}var(--gold){% else %}var(--green){% endif %};">{{ '%.1f'|format(latest.debt_to_gdp) }}%</div>
                 <div class="tc-sub">GDP: ${{ '%.0f'|format(latest.gdp_usd) }}B ({{ '%.1f'|format(latest.gdp_growth) }}% growth)</div>
             </div>
+            {% if debt_service_pct %}
+            <div class="ticker-card">
+                <div class="tc-accent" style="background:var(--purple);"></div>
+                <div class="tc-label">Debt Service / Revenue</div>
+                <div class="tc-value" style="color:{% if debt_service_pct > 80 %}var(--red){% elif debt_service_pct > 50 %}var(--gold){% else %}var(--green){% endif %};">{{ '%.0f'|format(debt_service_pct) }}%</div>
+                <div class="tc-sub">&#8358;{{ '%.1f'|format(latest.debt_service_ngn_tn) }}T service / &#8358;{{ '%.1f'|format(latest.federal_revenue_ngn_tn) }}T revenue</div>
+            </div>
+            {% endif %}
+            <div class="ticker-card">
+                <div class="tc-accent" style="background:var(--red);"></div>
+                <div class="tc-label">Inflation Rate</div>
+                <div class="tc-value" style="color:{% if latest.inflation_rate > 20 %}var(--red){% elif latest.inflation_rate > 10 %}var(--gold){% else %}var(--green){% endif %};">{{ '%.1f'|format(latest.inflation_rate) }}%</div>
+                <div class="tc-sub">CPI annual average</div>
+            </div>
+            <div class="ticker-card">
+                <div class="tc-accent" style="background:#78909c;"></div>
+                <div class="tc-label">Brent Crude Oil</div>
+                <div class="tc-value mono" style="color:#78909c;">${{ '%.0f'|format(latest.oil_price_usd) }}/bbl</div>
+                <div class="tc-sub">Annual average price</div>
+            </div>
         </div>
     </div>
 </section>
 
-<!-- ═══ PRESIDENTIAL SCORECARD ═══ -->
+<!-- PRESIDENTIAL SCORECARD -->
 <section class="section">
     <div class="container">
         <div class="section-head">
@@ -274,6 +299,51 @@
                             </span>
                         </div>
                     </div>
+                    <!-- Inflation -->
+                    {% if ps.inflation_start is not none and ps.inflation_end is not none %}
+                    <div class="pres-stat-row">
+                        <span class="pres-stat-label"><i class="bi bi-arrow-up-circle me-1"></i>Inflation</span>
+                        <div class="pres-stat-values">
+                            <span style="color:var(--gold);">{{ '%.1f'|format(ps.inflation_start) }}%</span>
+                            <i class="bi bi-arrow-right pres-stat-arrow" style="color:var(--text-tertiary);"></i>
+                            <span style="color:var(--blue);">{{ '%.1f'|format(ps.inflation_end) }}%</span>
+                            {% set infl_change = ps.inflation_end - ps.inflation_start %}
+                            <span class="pres-stat-change {% if infl_change > 0 %}change-up{% else %}change-down{% endif %}">
+                                {{ '+' if infl_change > 0 }}{{ '%.1f'|format(infl_change) }}pp
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <!-- Debt Service / Revenue -->
+                    {% if ps.ds_pct_start is not none and ps.ds_pct_end is not none %}
+                    <div class="pres-stat-row">
+                        <span class="pres-stat-label"><i class="bi bi-piggy-bank me-1"></i>Debt Svc/Rev</span>
+                        <div class="pres-stat-values">
+                            <span style="color:var(--gold);">{{ '%.0f'|format(ps.ds_pct_start) }}%</span>
+                            <i class="bi bi-arrow-right pres-stat-arrow" style="color:var(--text-tertiary);"></i>
+                            <span style="color:var(--blue);">{{ '%.0f'|format(ps.ds_pct_end) }}%</span>
+                            {% set ds_change = ps.ds_pct_end - ps.ds_pct_start %}
+                            <span class="pres-stat-change {% if ds_change > 0 %}change-up{% else %}change-down{% endif %}">
+                                {{ '+' if ds_change > 0 }}{{ '%.0f'|format(ds_change) }}pp
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <!-- Litres per Min Wage -->
+                    {% if ps.litres_start is not none and ps.litres_end is not none %}
+                    <div class="pres-stat-row">
+                        <span class="pres-stat-label"><i class="bi bi-droplet me-1"></i>Litres/Wage</span>
+                        <div class="pres-stat-values">
+                            <span style="color:var(--gold);">{{ '%.0f'|format(ps.litres_start) }}L</span>
+                            <i class="bi bi-arrow-right pres-stat-arrow" style="color:var(--text-tertiary);"></i>
+                            <span style="color:var(--blue);">{{ '%.0f'|format(ps.litres_end) }}L</span>
+                            {% set litres_change = ps.litres_end - ps.litres_start %}
+                            <span class="pres-stat-change {% if litres_change > 0 %}change-pos{% else %}change-neg{% endif %}">
+                                {{ '+' if litres_change > 0 }}{{ '%.0f'|format(litres_change) }}L
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
                 {% if ps.president.note %}
                 <div class="pres-note"><i class="bi bi-info-circle me-1"></i>{{ ps.president.note }}</div>
@@ -284,7 +354,53 @@
     </div>
 </section>
 
-<!-- ═══ CHARTS ═══ -->
+<!-- WHAT COULD THE DEBT BUY -->
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(255,215,64,0.1);color:var(--gold);"><i class="bi bi-cart-check"></i></div>
+            <div>
+                <div class="section-title">What Could ${{ '%.0f'|format(latest.total_debt_usd) }}B Buy?</div>
+                <div class="section-sub">Putting Nigeria's public debt in perspective</div>
+            </div>
+        </div>
+        <div class="debt-buy-grid">
+            {% set debt_usd = latest.total_debt_usd * 1000000000 %}
+            <div class="debt-buy-card">
+                <div class="debt-buy-icon">🏥</div>
+                <div class="debt-buy-count">{{ '{:,.0f}'.format(debt_usd / 15000000) }}</div>
+                <div class="debt-buy-label">World-class hospitals ($15M each)</div>
+            </div>
+            <div class="debt-buy-card">
+                <div class="debt-buy-icon">🏫</div>
+                <div class="debt-buy-count">{{ '{:,.0f}'.format(debt_usd / 500000) }}</div>
+                <div class="debt-buy-label">Primary schools ($500K each)</div>
+            </div>
+            <div class="debt-buy-card">
+                <div class="debt-buy-icon">🛣️</div>
+                <div class="debt-buy-count">{{ '{:,.0f}'.format(debt_usd / 1500000) }} km</div>
+                <div class="debt-buy-label">Paved highways ($1.5M/km)</div>
+            </div>
+            <div class="debt-buy-card">
+                <div class="debt-buy-icon">💡</div>
+                <div class="debt-buy-count">{{ '{:,.0f}'.format(debt_usd / 1500000) }} MW</div>
+                <div class="debt-buy-label">Solar power capacity ($1.5M/MW)</div>
+            </div>
+            <div class="debt-buy-card">
+                <div class="debt-buy-icon">🏠</div>
+                <div class="debt-buy-count">{{ '{:,.0f}'.format(debt_usd / 25000) }}</div>
+                <div class="debt-buy-label">Affordable homes ($25K each)</div>
+            </div>
+            <div class="debt-buy-card">
+                <div class="debt-buy-icon">💰</div>
+                <div class="debt-buy-count">${{ '%.0f'|format(debt_usd / (latest.population * 1000000)) }}</div>
+                <div class="debt-buy-label">Cash to every Nigerian</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CHARTS -->
 <section class="section">
     <div class="container">
         <div class="section-head">
@@ -307,6 +423,28 @@
                 <div class="chart-body"><canvas id="debtChart"></canvas></div>
             </div>
 
+            <!-- Revenue vs Debt Service -->
+            <div class="chart-card">
+                <div class="chart-head">
+                    <div>
+                        <div class="section-title" style="font-size:0.88rem;"><i class="bi bi-piggy-bank me-1" style="color:var(--purple);"></i>Revenue vs Debt Service (NGN Trillions)</div>
+                        <div class="section-sub">Federal revenue and debt servicing costs</div>
+                    </div>
+                </div>
+                <div class="chart-body"><canvas id="revenueChart"></canvas></div>
+            </div>
+
+            <!-- Debt Service as % of Revenue -->
+            <div class="chart-card">
+                <div class="chart-head">
+                    <div>
+                        <div class="section-title" style="font-size:0.88rem;"><i class="bi bi-exclamation-triangle me-1" style="color:var(--red);"></i>Debt Service as % of Revenue</div>
+                        <div class="section-sub">How much revenue goes to servicing debt</div>
+                    </div>
+                </div>
+                <div class="chart-body"><canvas id="dsRatioChart"></canvas></div>
+            </div>
+
             <!-- External Reserves -->
             <div class="chart-card">
                 <div class="chart-head">
@@ -316,6 +454,17 @@
                     </div>
                 </div>
                 <div class="chart-body"><canvas id="reservesChart"></canvas></div>
+            </div>
+
+            <!-- Oil Price vs Reserves -->
+            <div class="chart-card">
+                <div class="chart-head">
+                    <div>
+                        <div class="section-title" style="font-size:0.88rem;"><i class="bi bi-droplet-half me-1" style="color:#78909c;"></i>Brent Crude vs Reserves</div>
+                        <div class="section-sub">Oil price correlation with external reserves</div>
+                    </div>
+                </div>
+                <div class="chart-body"><canvas id="oilReservesChart"></canvas></div>
             </div>
 
             <!-- Exchange Rate -->
@@ -329,6 +478,17 @@
                 <div class="chart-body"><canvas id="fxChart"></canvas></div>
             </div>
 
+            <!-- Inflation Rate -->
+            <div class="chart-card">
+                <div class="chart-head">
+                    <div>
+                        <div class="section-title" style="font-size:0.88rem;"><i class="bi bi-arrow-up-circle me-1" style="color:var(--red);"></i>Inflation Rate (CPI %)</div>
+                        <div class="section-sub">Consumer price index annual average</div>
+                    </div>
+                </div>
+                <div class="chart-body"><canvas id="inflationChart"></canvas></div>
+            </div>
+
             <!-- Fuel Prices -->
             <div class="chart-card">
                 <div class="chart-head">
@@ -338,6 +498,17 @@
                     </div>
                 </div>
                 <div class="chart-body"><canvas id="fuelChart"></canvas></div>
+            </div>
+
+            <!-- Minimum Wage vs Petrol -->
+            <div class="chart-card">
+                <div class="chart-head">
+                    <div>
+                        <div class="section-title" style="font-size:0.88rem;"><i class="bi bi-droplet me-1" style="color:var(--green);"></i>Litres of Petrol per Minimum Wage</div>
+                        <div class="section-sub">How much fuel a minimum wage can buy</div>
+                    </div>
+                </div>
+                <div class="chart-body"><canvas id="litresChart"></canvas></div>
             </div>
 
             <!-- GDP -->
@@ -361,22 +532,33 @@
                 </div>
                 <div class="chart-body"><canvas id="debtGdpChart"></canvas></div>
             </div>
+
+            <!-- Naira Purchasing Power -->
+            <div class="chart-card">
+                <div class="chart-head">
+                    <div>
+                        <div class="section-title" style="font-size:0.88rem;"><i class="bi bi-cash-coin me-1" style="color:var(--gold);"></i>Naira Purchasing Power Index</div>
+                        <div class="section-sub">Value of N1,000 in 1999 terms (based on FX rate)</div>
+                    </div>
+                </div>
+                <div class="chart-body"><canvas id="nairaChart"></canvas></div>
+            </div>
         </div>
     </div>
 </section>
 
-<!-- ═══ FOOTER ═══ -->
+<!-- FOOTER -->
 <footer class="footer">
     <div class="container">
         <div class="footer-brand">Designed by Place of Ideation</div>
-        <div>Data sources: DMO, CBN, NBS, World Bank. Last updated: {{ last_updated }}.</div>
+        <div>Data sources: DMO, CBN, NBS, World Bank, Budget Office, IndexMundi. Last updated: {{ last_updated }}.</div>
         <div style="margin-top:0.35rem;">All figures are approximate and sourced from verified public records.</div>
     </div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
-// ── Theme ──
+// Theme
 function toggleTheme() {
     const html = document.documentElement;
     const isDark = html.getAttribute('data-theme') === 'dark';
@@ -392,11 +574,11 @@ function toggleTheme() {
     }
 })();
 
-// ── Data ──
+// Data
 const timeline = {{ timeline | tojson }};
 const eras = {{ eras | tojson }};
 
-// ── Chart helpers ──
+// Chart helpers
 const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
 const gridColor = () => isDark() ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
 const textColor = () => isDark() ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
@@ -417,7 +599,6 @@ const eraPlugin = {
             ctx.save();
             ctx.fillStyle = era.color + '08';
             ctx.fillRect(x1, chartArea.top, x2 - x1, chartArea.bottom - chartArea.top);
-            // Label
             ctx.fillStyle = era.color + '40';
             ctx.font = '600 9px Inter';
             ctx.textAlign = 'center';
@@ -445,9 +626,10 @@ const baseOpts = {
     }
 };
 
-function makeChart(id, datasets, yCallback) {
+function makeChart(id, datasets, yCallback, legendDisplay) {
     const opts = JSON.parse(JSON.stringify(baseOpts));
     if (yCallback) opts.scales.y.ticks.callback = yCallback;
+    if (legendDisplay) opts.plugins.legend = { display: true, labels: { color: textColor(), font: { size: 11 }, boxWidth: 12 } };
     return new Chart(document.getElementById(id), {
         type: 'line',
         data: { labels: timeline.years, datasets },
@@ -456,47 +638,157 @@ function makeChart(id, datasets, yCallback) {
     });
 }
 
-// ── Charts ──
+// Danger zone line plugin (horizontal threshold)
+function dangerLinePlugin(threshold, label) {
+    return {
+        id: 'dangerLine_' + threshold,
+        afterDraw(chart) {
+            const { ctx, chartArea, scales } = chart;
+            if (!chartArea || !scales.y) return;
+            const y = scales.y.getPixelForValue(threshold);
+            if (y < chartArea.top || y > chartArea.bottom) return;
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([6, 4]);
+            ctx.strokeStyle = '#ff525280';
+            ctx.lineWidth = 1.5;
+            ctx.moveTo(chartArea.left, y);
+            ctx.lineTo(chartArea.right, y);
+            ctx.stroke();
+            ctx.fillStyle = '#ff5252';
+            ctx.font = '600 9px Inter';
+            ctx.textAlign = 'right';
+            ctx.fillText(label, chartArea.right - 4, y - 4);
+            ctx.restore();
+        }
+    };
+}
 
 // 1. Total Debt
 makeChart('debtChart', [
     { label: 'Total Debt', data: timeline.total_debt, borderColor: '#ff5252', backgroundColor: '#ff525218', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#ff5252' },
     { label: 'External Debt', data: timeline.external_debt, borderColor: '#ff9100', backgroundColor: 'transparent', borderDash: [5,3], tension: 0.3, borderWidth: 1.5, pointRadius: 0 },
-], v => '$' + v + 'B');
+], v => '$' + v + 'B', true);
 
-// 2. Reserves
+// 2. Revenue vs Debt Service
+makeChart('revenueChart', [
+    { label: 'Federal Revenue', data: timeline.revenue, borderColor: '#00e676', backgroundColor: '#00e67618', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#00e676' },
+    { label: 'Debt Service', data: timeline.debt_service, borderColor: '#ff5252', backgroundColor: '#ff525218', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#ff5252' },
+], v => '\u20A6' + v + 'T', true);
+
+// 3. Debt Service as % of Revenue
+(function() {
+    const opts = JSON.parse(JSON.stringify(baseOpts));
+    opts.scales.y.ticks.callback = v => v + '%';
+    opts.scales.y.max = 120;
+    new Chart(document.getElementById('dsRatioChart'), {
+        type: 'bar',
+        data: {
+            labels: timeline.years,
+            datasets: [{
+                label: 'Debt Service / Revenue',
+                data: timeline.debt_service_pct,
+                backgroundColor: timeline.debt_service_pct.map(v => v > 80 ? '#ff525280' : v > 50 ? '#ffd74080' : '#00e67680'),
+                borderColor: timeline.debt_service_pct.map(v => v > 80 ? '#ff5252' : v > 50 ? '#ffd740' : '#00e676'),
+                borderWidth: 1,
+                borderRadius: 4,
+            }]
+        },
+        options: opts,
+        plugins: [eraPlugin, dangerLinePlugin(100, '100% (all revenue to debt)')],
+    });
+})();
+
+// 4. Reserves
 makeChart('reservesChart', [
     { label: 'External Reserves', data: timeline.reserves, borderColor: '#00e676', backgroundColor: '#00e67618', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#00e676' },
 ], v => '$' + v + 'B');
 
-// 3. Exchange Rate
+// 5. Oil Price vs Reserves (dual axis)
+(function() {
+    const opts = JSON.parse(JSON.stringify(baseOpts));
+    opts.scales.y.title = { display: true, text: 'Oil Price ($/bbl)', color: textColor() };
+    opts.scales.y.ticks.callback = v => '$' + v;
+    opts.scales.y1 = {
+        position: 'right', grid: { drawOnChartArea: false },
+        ticks: { color: textColor(), font: { size: 11 }, callback: v => '$' + v + 'B' },
+        title: { display: true, text: 'Reserves ($B)', color: textColor() },
+    };
+    opts.plugins.legend = { display: true, labels: { color: textColor(), font: { size: 11 }, boxWidth: 12 } };
+    new Chart(document.getElementById('oilReservesChart'), {
+        type: 'line',
+        data: {
+            labels: timeline.years,
+            datasets: [
+                { label: 'Brent Crude', data: timeline.oil_price, borderColor: '#78909c', backgroundColor: '#78909c18', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#78909c', yAxisID: 'y' },
+                { label: 'Reserves', data: timeline.reserves, borderColor: '#00e676', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2, pointRadius: 2, pointBackgroundColor: '#00e676', yAxisID: 'y1' },
+            ]
+        },
+        options: opts,
+        plugins: [eraPlugin],
+    });
+})();
+
+// 6. Exchange Rate
 makeChart('fxChart', [
     { label: 'Official Rate', data: timeline.fx_official, borderColor: '#ffd740', backgroundColor: '#ffd74018', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#ffd740' },
     { label: 'Parallel Rate', data: timeline.fx_parallel, borderColor: '#ff5252', backgroundColor: 'transparent', borderDash: [5,3], tension: 0.3, borderWidth: 1.5, pointRadius: 0 },
-], v => '\u20A6' + v.toLocaleString());
+], v => '\u20A6' + v.toLocaleString(), true);
 
-// 4. Fuel Prices
+// 7. Inflation
+(function() {
+    const opts = JSON.parse(JSON.stringify(baseOpts));
+    opts.scales.y.ticks.callback = v => v + '%';
+    new Chart(document.getElementById('inflationChart'), {
+        type: 'bar',
+        data: {
+            labels: timeline.years,
+            datasets: [{
+                label: 'Inflation Rate',
+                data: timeline.inflation,
+                backgroundColor: timeline.inflation.map(v => v > 20 ? '#ff525280' : v > 12 ? '#ffd74080' : '#00e67680'),
+                borderColor: timeline.inflation.map(v => v > 20 ? '#ff5252' : v > 12 ? '#ffd740' : '#00e676'),
+                borderWidth: 1,
+                borderRadius: 4,
+            }]
+        },
+        options: opts,
+        plugins: [eraPlugin],
+    });
+})();
+
+// 8. Fuel Prices
 makeChart('fuelChart', [
     { label: 'Petrol (PMS)', data: timeline.petrol, borderColor: '#ff9100', backgroundColor: '#ff910018', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#ff9100' },
     { label: 'Diesel (AGO)', data: timeline.diesel, borderColor: '#448aff', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2, pointRadius: 2, pointBackgroundColor: '#448aff' },
-], v => '\u20A6' + v);
+], v => '\u20A6' + v, true);
 
-// 5. GDP
+// 9. Litres of Petrol per Minimum Wage
+makeChart('litresChart', [
+    { label: 'Litres per Min. Wage', data: timeline.litres_per_wage, borderColor: '#00e676', backgroundColor: '#00e67618', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#00e676' },
+], v => v + 'L');
+
+// 10. GDP
 makeChart('gdpChart', [
     { label: 'GDP', data: timeline.gdp, borderColor: '#448aff', backgroundColor: '#448aff18', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#448aff' },
 ], v => '$' + v + 'B');
 
-// 6. Debt to GDP
+// 11. Debt to GDP
 makeChart('debtGdpChart', [
     { label: 'Debt/GDP', data: timeline.debt_to_gdp, borderColor: '#009401', backgroundColor: '#00940118', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#009401' },
 ], v => v + '%');
 
-// ── Debt Ticker Animation ──
+// 12. Naira Purchasing Power
+makeChart('nairaChart', [
+    { label: 'Purchasing Power Index', data: timeline.naira_purchasing_power, borderColor: '#ffd740', backgroundColor: '#ffd74018', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#ffd740' },
+], v => '\u20A6' + v);
+
+// Debt Ticker Animation
 (function() {
     const el = document.getElementById('debtTicker');
     const target = {{ latest.total_debt_usd }};
     let current = target - 0.3;
-    const rate = 0.00001; // ~$10k per second visual effect
+    const rate = 0.00001;
     function tick() {
         current += rate;
         if (current > target + 1) current = target - 0.3;
