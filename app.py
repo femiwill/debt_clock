@@ -160,9 +160,20 @@ def seed_data():
 # DATABASE INITIALIZATION
 # ══════════════════════════════════════════════════════════════════════════════
 
+DATA_VERSION = 2  # Bump this to force a re-seed on next deploy
+
 with app.app_context():
     db.create_all()
-    if President.query.count() == 0:
+    # Re-seed if empty or data version changed
+    latest = EconomicData.query.order_by(EconomicData.year.desc()).first()
+    needs_seed = (
+        President.query.count() == 0
+        or os.environ.get('FORCE_RESEED') == '1'
+        or (latest and latest.gdp_usd and latest.year == 1999 and latest.gdp_usd < 50)  # old pre-rebased data
+    )
+    if needs_seed:
+        db.drop_all()
+        db.create_all()
         seed_data()
 
 
