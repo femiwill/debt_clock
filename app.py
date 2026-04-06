@@ -190,40 +190,58 @@ def index():
     latest = all_data[-1] if all_data else None
 
     # Build presidential summary cards
-    pres_summaries = []
+    # Group data by president
+    pres_data = {}
     for pres in presidents:
-        pdata = [d for d in all_data if d.president_id == pres.id]
+        pres_data[pres.id] = [d for d in all_data if d.president_id == pres.id]
+
+    pres_summaries = []
+    for i, pres in enumerate(presidents):
+        pdata = pres_data[pres.id]
         if not pdata:
             continue
-        first = pdata[0]
+
+        # "Inherited" = previous president's LAST data point (ensures continuity)
+        # For the first president, use their own first data point
+        if i > 0 and pres_data.get(presidents[i-1].id):
+            prev_last = pres_data[presidents[i-1].id][-1]
+        else:
+            prev_last = pdata[0]
+
         last = pdata[-1]
 
-        debt_change = last.total_debt_usd - first.total_debt_usd
-        reserves_change = last.external_reserves_usd - first.external_reserves_usd
-        fx_start = first.exchange_rate_official
+        debt_inherited = prev_last.total_debt_usd
+        debt_left = last.total_debt_usd
+        debt_change = debt_left - debt_inherited
+        reserves_start = prev_last.external_reserves_usd
+        reserves_end = last.external_reserves_usd
+        reserves_change = reserves_end - reserves_start
+        fx_start = prev_last.exchange_rate_official
         fx_end = last.exchange_rate_official
-        petrol_start = first.petrol_price
+        petrol_start = prev_last.petrol_price
         petrol_end = last.petrol_price
+        gdp_start = prev_last.gdp_usd
+        gdp_end = last.gdp_usd
 
         pres_summaries.append({
             'president': pres,
-            'first': first,
+            'first': prev_last,
             'last': last,
             'years': f"{pres.start_year}–{pres.end_year or 'present'}",
-            'debt_inherited': first.total_debt_usd,
-            'debt_left': last.total_debt_usd,
+            'debt_inherited': debt_inherited,
+            'debt_left': debt_left,
             'debt_change': debt_change,
-            'debt_change_pct': (debt_change / first.total_debt_usd * 100) if first.total_debt_usd else 0,
-            'reserves_start': first.external_reserves_usd,
-            'reserves_end': last.external_reserves_usd,
+            'debt_change_pct': (debt_change / debt_inherited * 100) if debt_inherited else 0,
+            'reserves_start': reserves_start,
+            'reserves_end': reserves_end,
             'reserves_change': reserves_change,
             'fx_start': fx_start,
             'fx_end': fx_end,
             'fx_change_pct': ((fx_end - fx_start) / fx_start * 100) if fx_start else 0,
             'petrol_start': petrol_start,
             'petrol_end': petrol_end,
-            'gdp_start': first.gdp_usd,
-            'gdp_end': last.gdp_usd,
+            'gdp_start': gdp_start,
+            'gdp_end': gdp_end,
         })
 
     # Per-citizen debt
