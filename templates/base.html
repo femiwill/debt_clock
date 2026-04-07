@@ -124,6 +124,7 @@
     <div class="container">
         <div class="nav-inner">
             <a href="/" class="{% if request.path == '/' %}active{% endif %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
+            <a href="/borrowing" class="{% if '/borrowing' in request.path %}active{% endif %}"><i class="bi bi-cash-stack"></i> Borrowing</a>
             <a href="/compare" class="{% if '/compare' in request.path %}active{% endif %}"><i class="bi bi-people"></i> Compare</a>
             <a href="/breakdown" class="{% if '/breakdown' in request.path %}active{% endif %}"><i class="bi bi-pie-chart"></i> Debt Breakdown</a>
             <a href="/states" class="{% if '/states' in request.path %}active{% endif %}"><i class="bi bi-geo-alt"></i> State Debt</a>

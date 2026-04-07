@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+{% block title %}Presidential Borrowing Dashboard — Nigeria Debt Clock{% endblock %}
+{% block description %}How much did each Nigerian president borrow? Total debt added, annual borrowing rate, and year-by-year breakdown since 1999.{% endblock %}
+
+{% block extra_styles %}
+/* Summary cards */
+.borrow-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.borrow-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; position: relative; overflow: hidden; transition: all 0.3s; }
+.borrow-card:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+.borrow-card .bc-accent { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.borrow-card .bc-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem; color: #fff; margin-bottom: 0.75rem; }
+.borrow-card .bc-name { font-size: 0.78rem; font-weight: 700; margin-bottom: 0.15rem; }
+.borrow-card .bc-years { font-size: 0.65rem; color: var(--text-tertiary); margin-bottom: 0.75rem; }
+.borrow-card .bc-amount { font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 800; letter-spacing: -1px; }
+.borrow-card .bc-sub { font-size: 0.68rem; color: var(--text-secondary); margin-top: 0.35rem; }
+.borrow-card .bc-rate { font-size: 0.72rem; margin-top: 0.5rem; padding: 0.3rem 0.6rem; border-radius: 50px; display: inline-block; font-weight: 700; }
+.rate-high { background: rgba(255,82,82,0.1); color: var(--red); }
+.rate-med { background: rgba(255,215,64,0.1); color: var(--gold); }
+.rate-low { background: rgba(0,230,118,0.1); color: var(--green); }
+.rate-neg { background: rgba(0,230,118,0.15); color: var(--green); }
+
+/* Ranking table */
+.rank-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+.rank-table th { background: var(--bg-card); border: 1px solid var(--border); padding: 0.65rem 0.85rem; text-align: left; font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); }
+.rank-table td { border: 1px solid var(--border); padding: 0.65rem 0.85rem; font-size: 0.82rem; }
+.rank-table tr:hover { background: var(--bg-card-hover); }
+.rank-table .mono { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+.rank-medal { font-size: 1.1rem; }
+
+/* Year-by-year */
+.yby-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+.yby-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.yby-head { padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem; }
+.yby-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.65rem; color: #fff; flex-shrink: 0; }
+.yby-body { padding: 0.75rem 1.25rem; }
+.yby-row { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid var(--border); font-size: 0.78rem; }
+.yby-row:last-child { border-bottom: none; }
+.yby-year { color: var(--text-secondary); font-weight: 600; }
+.yby-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+.yby-bar { height: 4px; border-radius: 2px; margin-top: 0.2rem; }
+
+/* Insight box */
+.insight-box { background: linear-gradient(135deg, rgba(0,148,1,0.06), var(--bg-card)); border: 1px solid var(--ng-green)33; border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem; }
+.insight-box h4 { font-size: 0.85rem; color: var(--ng-green); margin-bottom: 0.5rem; }
+.insight-box p { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7; }
+.insight-box ul { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.9; padding-left: 1.25rem; margin-top: 0.35rem; }
+
+@media (max-width: 768px) { .yby-grid { grid-template-columns: 1fr; } }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(255,82,82,0.1);color:var(--red);"><i class="bi bi-cash-stack"></i></div>
+            <div>
+                <div class="section-title">Presidential Borrowing Dashboard</div>
+                <div class="section-sub">How much did each president add to Nigeria's debt? (1999–{{ latest_year }})</div>
+            </div>
+        </div>
+
+        <!-- Key insight -->
+        <div class="insight-box">
+            <h4><i class="bi bi-lightbulb"></i> Key Findings</h4>
+            <ul>
+                {% for b in borrowing %}
+                <li><strong>{{ b.name }}</strong> {{ 'reduced' if b.debt_added < 0 else 'added' }} <strong>{{ '$%.1f'|format(b.debt_added|abs) }}B</strong> ({{ '$%.1f'|format(b.annual_rate|abs) }}B/year) over {{ b.years_in_office }} years</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Summary cards -->
+        <div class="borrow-summary">
+            {% for b in borrowing %}
+            <div class="borrow-card">
+                <div class="bc-accent" style="background:{{ b.party_color }};"></div>
+                <div class="bc-avatar" style="background:{{ b.party_color }};">{{ b.initials }}</div>
+                <div class="bc-name">{{ b.name }}</div>
+                <div class="bc-years">{{ b.start }}–{{ b.end }} ({{ b.years_in_office }} yrs)</div>
+                <div class="bc-amount" style="color:{% if b.debt_added < 0 %}var(--green){% elif b.debt_added > 30 %}var(--red){% else %}var(--gold){% endif %};">
+                    {{ '+' if b.debt_added > 0 }}${{ '%.1f'|format(b.debt_added) }}B
+                </div>
+                <div class="bc-sub">
+                    {{ b.inherited_label }}: ${{ '%.1f'|format(b.inherited) }}B &rarr; ${{ '%.1f'|format(b.left) }}B
+                </div>
+                <div class="bc-rate {% if b.annual_rate > 8 %}rate-high{% elif b.annual_rate > 3 %}rate-med{% elif b.annual_rate >= 0 %}rate-low{% else %}rate-neg{% endif %}">
+                    {{ '+' if b.annual_rate > 0 }}${{ '%.1f'|format(b.annual_rate) }}B/year
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Charts -->
+        <div class="chart-grid">
+            <!-- Total Debt Added Bar -->
+            <div class="chart-card">
+                <div class="chart-head"><div>
+                    <div class="section-title" style="font-size:0.88rem;"><i class="bi bi-bar-chart-fill" style="color:var(--red);"></i> Total Debt Added by President (USD B)</div>
+                    <div class="section-sub">Net change in total public debt during tenure</div>
+                </div></div>
+                <div class="chart-body"><canvas id="debtAddedChart"></canvas></div>
+            </div>
+
+            <!-- Annual Borrowing Rate -->
+            <div class="chart-card">
+                <div class="chart-head"><div>
+                    <div class="section-title" style="font-size:0.88rem;"><i class="bi bi-speedometer" style="color:var(--gold);"></i> Annual Borrowing Rate (USD B/year)</div>
+                    <div class="section-sub">Average debt added per year in office</div>
+                </div></div>
+                <div class="chart-body"><canvas id="annualRateChart"></canvas></div>
+            </div>
+
+            <!-- Debt Growth % -->
+            <div class="chart-card">
+                <div class="chart-head"><div>
+                    <div class="section-title" style="font-size:0.88rem;"><i class="bi bi-percent" style="color:var(--purple);"></i> Debt Growth Percentage</div>
+                    <div class="section-sub">How much did debt grow relative to what was inherited?</div>
+                </div></div>
+                <div class="chart-body"><canvas id="debtGrowthChart"></canvas></div>
+            </div>
+
+            <!-- Year-by-Year Waterfall -->
+            <div class="chart-card">
+                <div class="chart-head"><div>
+                    <div class="section-title" style="font-size:0.88rem;"><i class="bi bi-bar-chart-steps" style="color:var(--blue);"></i> Year-by-Year Debt Change</div>
+                    <div class="section-sub">Annual change in total debt (USD B)</div>
+                </div></div>
+                <div class="chart-body"><canvas id="waterfallChart"></canvas></div>
+            </div>
+
+            <!-- External vs Domestic Split -->
+            <div class="chart-card">
+                <div class="chart-head"><div>
+                    <div class="section-title" style="font-size:0.88rem;"><i class="bi bi-stack" style="color:var(--orange);"></i> External vs Domestic Borrowing</div>
+                    <div class="section-sub">How much of new debt was external vs domestic?</div>
+                </div></div>
+                <div class="chart-body"><canvas id="extDomChart"></canvas></div>
+            </div>
+
+            <!-- Debt-to-GDP at Handover -->
+            <div class="chart-card">
+                <div class="chart-head"><div>
+                    <div class="section-title" style="font-size:0.88rem;"><i class="bi bi-pie-chart" style="color:var(--ng-green);"></i> Debt-to-GDP at Handover</div>
+                    <div class="section-sub">Ratio when inheriting vs leaving office</div>
+                </div></div>
+                <div class="chart-body"><canvas id="d2gHandoverChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Ranking Table -->
+        <div style="margin-top:2rem;">
+            <div class="section-head">
+                <div class="section-icon" style="background:rgba(255,215,64,0.1);color:var(--gold);"><i class="bi bi-trophy"></i></div>
+                <div>
+                    <div class="section-title">Borrowing Leaderboard</div>
+                    <div class="section-sub">Ranked by total debt added (highest to lowest)</div>
+                </div>
+            </div>
+            <table class="rank-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>President</th>
+                        <th>Years</th>
+                        <th>Inherited</th>
+                        <th>Left</th>
+                        <th>Debt Added</th>
+                        <th>Annual Rate</th>
+                        <th>Growth %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in borrowing_ranked %}
+                    <tr>
+                        <td><span class="rank-medal">{% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}</span></td>
+                        <td><strong>{{ b.name }}</strong></td>
+                        <td>{{ b.start }}–{{ b.end }}</td>
+                        <td class="mono">${{ '%.1f'|format(b.inherited) }}B</td>
+                        <td class="mono">${{ '%.1f'|format(b.left) }}B</td>
+                        <td class="mono" style="color:{% if b.debt_added < 0 %}var(--green){% else %}var(--red){% endif %};">{{ '+' if b.debt_added > 0 }}${{ '%.1f'|format(b.debt_added) }}B</td>
+                        <td class="mono">${{ '%.1f'|format(b.annual_rate) }}B/yr</td>
+                        <td class="mono" style="color:{% if b.growth_pct < 0 %}var(--green){% elif b.growth_pct > 50 %}var(--red){% else %}var(--gold){% endif %};">{{ '+' if b.growth_pct > 0 }}{{ '%.0f'|format(b.growth_pct) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Year-by-Year Breakdown per President -->
+        <div style="margin-top:2rem;">
+            <div class="section-head">
+                <div class="section-icon" style="background:rgba(68,138,255,0.1);color:var(--blue);"><i class="bi bi-calendar3"></i></div>
+                <div>
+                    <div class="section-title">Year-by-Year Breakdown</div>
+                    <div class="section-sub">Annual debt change under each president</div>
+                </div>
+            </div>
+            <div class="yby-grid">
+                {% for b in borrowing %}
+                <div class="yby-card">
+                    <div class="yby-head" style="background:linear-gradient(135deg, {{ b.party_color }}12, transparent);">
+                        <div class="yby-avatar" style="background:{{ b.party_color }};">{{ b.initials }}</div>
+                        <div>
+                            <div style="font-weight:700;font-size:0.85rem;">{{ b.name }}</div>
+                            <div style="font-size:0.68rem;color:var(--text-tertiary);">{{ b.start }}–{{ b.end }} &middot; Total: {{ '+' if b.debt_added > 0 }}${{ '%.1f'|format(b.debt_added) }}B</div>
+                        </div>
+                    </div>
+                    <div class="yby-body">
+                        {% for yr in b.yearly %}
+                        <div class="yby-row">
+                            <span class="yby-year">{{ yr.year }}</span>
+                            <span class="yby-val" style="color:{% if yr.change < 0 %}var(--green){% elif yr.change > 5 %}var(--red){% else %}var(--gold){% endif %};">
+                                ${{ '%.1f'|format(yr.total) }}B
+                                <span style="font-size:0.65rem;opacity:0.7;">({{ '+' if yr.change > 0 }}{{ '%.1f'|format(yr.change) }})</span>
+                            </span>
+                        </div>
+                        {% set max_change = b.max_change if b.max_change > 0 else 1 %}
+                        <div class="yby-bar" style="width:{{ (yr.change|abs / max_change * 100)|round }}%;background:{% if yr.change < 0 %}var(--green){% else %}{{ b.party_color }}{% endif %};"></div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const borrowing = {{ borrowing_json | tojson }};
+const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+const tc = () => isDark() ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
+const gc = () => isDark() ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+
+const names = borrowing.map(b => b.name.split(' ').pop());
+const colors = borrowing.map(b => b.party_color);
+
+function barChart(id, data, label, cb, horizontal) {
+    const opts = {
+        responsive: true, maintainAspectRatio: false,
+        indexAxis: horizontal ? 'y' : 'x',
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { ticks: { color: tc(), callback: horizontal ? cb : undefined }, grid: { color: gc() } },
+            y: { ticks: { color: tc(), font: { size: 11, weight: '600' }, callback: horizontal ? undefined : cb }, grid: { color: gc() } }
+        }
+    };
+    new Chart(document.getElementById(id), {
+        type: 'bar',
+        data: { labels: names, datasets: [{ label, data, backgroundColor: colors.map(c => c + '80'), borderColor: colors, borderWidth: 2, borderRadius: 6 }] },
+        options: opts
+    });
+}
+
+// 1. Total Debt Added
+barChart('debtAddedChart', borrowing.map(b => b.debt_added), 'Debt Added', v => '$' + v + 'B');
+
+// 2. Annual Rate
+barChart('annualRateChart', borrowing.map(b => b.annual_rate), 'Annual Rate', v => '$' + v + 'B/yr');
+
+// 3. Debt Growth %
+barChart('debtGrowthChart', borrowing.map(b => b.growth_pct), 'Growth', v => v + '%');
+
+// 4. Year-by-Year Waterfall
+(function() {
+    const years = [], changes = [], bgColors = [], bdColors = [];
+    borrowing.forEach(b => {
+        b.yearly.forEach(yr => {
+            years.push(yr.year);
+            changes.push(yr.change);
+            bgColors.push(yr.change < 0 ? '#00e67680' : b.party_color + '80');
+            bdColors.push(yr.change < 0 ? '#00e676' : b.party_color);
+        });
+    });
+    new Chart(document.getElementById('waterfallChart'), {
+        type: 'bar',
+        data: { labels: years, datasets: [{ label: 'Annual Change', data: changes, backgroundColor: bgColors, borderColor: bdColors, borderWidth: 1.5, borderRadius: 4 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: tc(), font: { size: 10 } }, grid: { color: gc() } },
+                y: { ticks: { color: tc(), callback: v => '$' + v + 'B' }, grid: { color: gc() } }
+            }
+        }
+    });
+})();
+
+// 5. External vs Domestic
+(function() {
+    new Chart(document.getElementById('extDomChart'), {
+        type: 'bar',
+        data: {
+            labels: names,
+            datasets: [
+                { label: 'External Added', data: borrowing.map(b => b.ext_added), backgroundColor: '#448aff80', borderColor: '#448aff', borderWidth: 1.5, borderRadius: 4 },
+                { label: 'Domestic Added (USD eq.)', data: borrowing.map(b => b.dom_added_usd), backgroundColor: '#ff910080', borderColor: '#ff9100', borderWidth: 1.5, borderRadius: 4 },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: true, labels: { color: tc(), font: { size: 11 }, boxWidth: 12 } } },
+            scales: {
+                x: { stacked: false, ticks: { color: tc() }, grid: { color: gc() } },
+                y: { ticks: { color: tc(), callback: v => '$' + v + 'B' }, grid: { color: gc() } }
+            }
+        }
+    });
+})();
+
+// 6. Debt-to-GDP at Handover
+(function() {
+    new Chart(document.getElementById('d2gHandoverChart'), {
+        type: 'bar',
+        data: {
+            labels: names,
+            datasets: [
+                { label: 'Inherited', data: borrowing.map(b => b.d2g_inherited), backgroundColor: '#ffd74080', borderColor: '#ffd740', borderWidth: 1.5, borderRadius: 4 },
+                { label: 'Left', data: borrowing.map(b => b.d2g_left), backgroundColor: '#448aff80', borderColor: '#448aff', borderWidth: 1.5, borderRadius: 4 },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: true, labels: { color: tc(), font: { size: 11 }, boxWidth: 12 } } },
+            scales: {
+                x: { ticks: { color: tc() }, grid: { color: gc() } },
+                y: { ticks: { color: tc(), callback: v => v + '%' }, grid: { color: gc() } }
+            }
+        }
+    });
+})();
+</script>
+{% endblock %}

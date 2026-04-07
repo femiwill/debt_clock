@@ -576,6 +576,88 @@ def build_pres_summary(pres, prev_last, last, years_label):
     }
 
 
+@app.route('/borrowing')
+def borrowing():
+    presidents = President.query.order_by(President.start_year).all()
+    all_data = EconomicData.query.order_by(EconomicData.year).all()
+    latest_year = all_data[-1].year if all_data else 2025
+
+    pres_data = {}
+    for pres in presidents:
+        pres_data[pres.id] = [d for d in all_data if d.president_id == pres.id]
+
+    borrowing_list = []
+    for i, pres in enumerate(presidents):
+        pdata = pres_data[pres.id]
+        if not pdata:
+            continue
+
+        # Inherited = previous president's last data point
+        if i > 0 and pres_data.get(presidents[i-1].id):
+            prev_last = pres_data[presidents[i-1].id][-1]
+        else:
+            prev_last = pdata[0]
+
+        last = pdata[-1]
+        inherited = prev_last.total_debt_usd
+        left = last.total_debt_usd
+        debt_added = left - inherited
+        years_in_office = (pres.end_year or 2025) - pres.start_year
+        if years_in_office < 1:
+            years_in_office = 1
+        annual_rate = debt_added / years_in_office
+        growth_pct = (debt_added / inherited * 100) if inherited else 0
+
+        # External vs domestic split
+        ext_added = last.external_debt_usd - prev_last.external_debt_usd
+        dom_inherited_usd = (prev_last.domestic_debt_ngn_tn * 1000 / prev_last.exchange_rate_official) if prev_last.exchange_rate_official else 0
+        dom_left_usd = (last.domestic_debt_ngn_tn * 1000 / last.exchange_rate_official) if last.exchange_rate_official else 0
+        dom_added_usd = dom_left_usd - dom_inherited_usd
+
+        # Year-by-year
+        yearly = []
+        max_change = 0
+        for j, d in enumerate(pdata):
+            if j == 0:
+                prev_total = inherited
+            else:
+                prev_total = pdata[j-1].total_debt_usd
+            change = d.total_debt_usd - prev_total
+            if abs(change) > max_change:
+                max_change = abs(change)
+            yearly.append({'year': d.year, 'total': d.total_debt_usd, 'change': round(change, 1)})
+
+        borrowing_list.append({
+            'name': pres.name,
+            'initials': pres.photo_initials,
+            'party_color': pres.party_color,
+            'start': pres.start_year,
+            'end': pres.end_year or 'present',
+            'years_in_office': years_in_office,
+            'inherited': round(inherited, 1),
+            'left': round(left, 1),
+            'debt_added': round(debt_added, 1),
+            'annual_rate': round(annual_rate, 1),
+            'growth_pct': round(growth_pct, 1),
+            'ext_added': round(ext_added, 1),
+            'dom_added_usd': round(dom_added_usd, 1),
+            'd2g_inherited': prev_last.debt_to_gdp,
+            'd2g_left': last.debt_to_gdp,
+            'inherited_label': 'Inherited' if i > 0 else 'Start',
+            'yearly': yearly,
+            'max_change': round(max_change, 1),
+        })
+
+    # Ranked by debt added (highest first)
+    borrowing_ranked = sorted(borrowing_list, key=lambda b: b['debt_added'], reverse=True)
+
+    return render_template('borrowing.html',
+                           borrowing=borrowing_list,
+                           borrowing_ranked=borrowing_ranked,
+                           borrowing_json=borrowing_list,
+                           latest_year=latest_year)
+
+
 @app.route('/compare')
 def compare():
     presidents = President.query.order_by(President.start_year).all()
@@ -685,7 +767,7 @@ def robots_txt():
 @app.route('/sitemap.xml')
 def sitemap_xml():
     base = request.url_root.replace('http://', 'https://').rstrip('/')
-    pages = ['/', '/compare', '/breakdown', '/states', '/africa', '/quiz']
+    pages = ['/', '/borrowing', '/compare', '/breakdown', '/states', '/africa', '/quiz']
     xml = ['<?xml version="1.0" encoding="UTF-8"?>',
            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for page in pages:
