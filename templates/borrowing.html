@@ -73,7 +73,7 @@
             <h4><i class="bi bi-lightbulb"></i> Key Findings</h4>
             <ul>
                 {% for b in borrowing %}
-                <li><strong>{{ b.name }}</strong> {{ 'reduced' if b.debt_added < 0 else 'added' }} <strong>{{ '$%.1f'|format(b.debt_added|abs) }}B</strong> ({{ '$%.1f'|format(b.annual_rate|abs) }}B/year) over {{ b.years_in_office }} years</li>
+                <li><strong>{{ b.name }}</strong> {{ 'reduced' if b.debt_added < 0 else 'has added' if b.is_incumbent else 'added' }} <strong>{{ '$%.1f'|format(b.debt_added|abs) }}B</strong> ({{ '$%.1f'|format(b.annual_rate|abs) }}B/year) over {{ b.years_in_office }} years{% if b.is_incumbent %} <span style="color:var(--ng-green);font-weight:700;">(still in office)</span>{% endif %}</li>
                 {% endfor %}
             </ul>
         </div>
@@ -84,13 +84,13 @@
             <div class="borrow-card">
                 <div class="bc-accent" style="background:{{ b.party_color }};"></div>
                 <div class="bc-avatar" style="background:{{ b.party_color }};">{{ b.initials }}</div>
-                <div class="bc-name">{{ b.name }}</div>
-                <div class="bc-years">{{ b.start }}–{{ b.end }} ({{ b.years_in_office }} yrs)</div>
+                <div class="bc-name">{{ b.name }}{% if b.is_incumbent %} <span style="font-size:0.6rem;color:var(--ng-green);font-weight:700;background:rgba(0,148,1,0.1);padding:0.1rem 0.4rem;border-radius:50px;vertical-align:middle;">IN OFFICE</span>{% endif %}</div>
+                <div class="bc-years">{{ b.start }}–{{ b.end }} ({{ b.years_in_office }} yrs{% if b.is_incumbent %} so far{% endif %})</div>
                 <div class="bc-amount" style="color:{% if b.debt_added < 0 %}var(--green){% elif b.debt_added > 30 %}var(--red){% else %}var(--gold){% endif %};">
                     {{ '+' if b.debt_added > 0 }}${{ '%.1f'|format(b.debt_added) }}B
                 </div>
                 <div class="bc-sub">
-                    {{ b.inherited_label }}: ${{ '%.1f'|format(b.inherited) }}B &rarr; ${{ '%.1f'|format(b.left) }}B
+                    {{ b.inherited_label }}: ${{ '%.1f'|format(b.inherited) }}B &rarr; {{ b.left_label }}: ${{ '%.1f'|format(b.left) }}B
                 </div>
                 <div class="bc-rate {% if b.annual_rate > 8 %}rate-high{% elif b.annual_rate > 3 %}rate-med{% elif b.annual_rate >= 0 %}rate-low{% else %}rate-neg{% endif %}">
                     {{ '+' if b.annual_rate > 0 }}${{ '%.1f'|format(b.annual_rate) }}B/year
@@ -172,7 +172,7 @@
                         <th>President</th>
                         <th>Years</th>
                         <th>Inherited</th>
-                        <th>Left</th>
+                        <th>Left / Current</th>
                         <th>Debt Added</th>
                         <th>Annual Rate</th>
                         <th>Growth %</th>
@@ -182,15 +182,16 @@
                     {% for b in borrowing_ranked %}
                     <tr>
                         <td><span class="rank-medal">{% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}</span></td>
-                        <td><strong>{{ b.name }}</strong></td>
+                        <td><strong>{{ b.name }}</strong>{% if b.is_incumbent %} <span style="font-size:0.6rem;color:var(--ng-green);font-weight:700;">ONGOING</span>{% endif %}</td>
                         <td>{{ b.start }}–{{ b.end }}</td>
                         <td class="mono">${{ '%.1f'|format(b.inherited) }}B</td>
                         <td class="mono">${{ '%.1f'|format(b.left) }}B</td>
-                        <td class="mono" style="color:{% if b.debt_added < 0 %}var(--green){% else %}var(--red){% endif %};">{{ '+' if b.debt_added > 0 }}${{ '%.1f'|format(b.debt_added) }}B</td>
+                        <td class="mono" style="color:{% if b.debt_added < 0 %}var(--green){% else %}var(--red){% endif %};">{{ '+' if b.debt_added > 0 }}${{ '%.1f'|format(b.debt_added) }}B{% if b.is_incumbent %}*{% endif %}</td>
                         <td class="mono">${{ '%.1f'|format(b.annual_rate) }}B/yr</td>
                         <td class="mono" style="color:{% if b.growth_pct < 0 %}var(--green){% elif b.growth_pct > 50 %}var(--red){% else %}var(--gold){% endif %};">{{ '+' if b.growth_pct > 0 }}{{ '%.0f'|format(b.growth_pct) }}%</td>
                     </tr>
                     {% endfor %}
+                    <tr><td colspan="8" style="font-size:0.65rem;color:var(--text-tertiary);border:none;padding-top:0.5rem;">* Ongoing administration — figures will change as presidency continues</td></tr>
                 </tbody>
             </table>
         </div>
@@ -209,9 +210,9 @@
                 <div class="yby-card">
                     <div class="yby-head" style="background:linear-gradient(135deg, {{ b.party_color }}12, transparent);">
                         <div class="yby-avatar" style="background:{{ b.party_color }};">{{ b.initials }}</div>
-                        <div>
-                            <div style="font-weight:700;font-size:0.88rem;">{{ b.name }}</div>
-                            <div style="font-size:0.68rem;color:var(--text-tertiary);">{{ b.start }}–{{ b.end }} &middot; {{ b.party }}</div>
+                        <div style="flex:1;">
+                            <div style="font-weight:700;font-size:0.88rem;">{{ b.name }}{% if b.is_incumbent %} <span style="font-size:0.58rem;color:var(--ng-green);font-weight:700;background:rgba(0,148,1,0.12);padding:0.1rem 0.45rem;border-radius:50px;vertical-align:middle;">ONGOING</span>{% endif %}</div>
+                            <div style="font-size:0.68rem;color:var(--text-tertiary);">{{ b.start }}–{{ b.end }} &middot; {{ b.party }}{% if b.is_incumbent %} &middot; {{ b.years_in_office }} yrs so far{% endif %}</div>
                         </div>
                     </div>
                     <!-- Quick summary strip -->
@@ -221,11 +222,11 @@
                             <div class="yby-summary-val" style="color:var(--gold);">${{ '%.1f'|format(b.inherited) }}B</div>
                         </div>
                         <div class="yby-summary-item">
-                            <div class="yby-summary-label">Left With</div>
+                            <div class="yby-summary-label">{{ 'Current' if b.is_incumbent else 'Left With' }}</div>
                             <div class="yby-summary-val" style="color:var(--blue);">${{ '%.1f'|format(b.left) }}B</div>
                         </div>
                         <div class="yby-summary-item">
-                            <div class="yby-summary-label">Net Added</div>
+                            <div class="yby-summary-label">{{ b.added_label }}</div>
                             <div class="yby-summary-val" style="color:{% if b.debt_added < 0 %}var(--green){% else %}var(--red){% endif %};">{{ '+' if b.debt_added > 0 }}${{ '%.1f'|format(b.debt_added) }}B</div>
                         </div>
                         <div class="yby-summary-item">

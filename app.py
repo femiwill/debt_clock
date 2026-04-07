@@ -627,6 +627,8 @@ def borrowing():
                 max_change = abs(change)
             yearly.append({'year': d.year, 'total': d.total_debt_usd, 'change': round(change, 1)})
 
+        is_incumbent = pres.end_year is None
+
         borrowing_list.append({
             'name': pres.name,
             'initials': pres.photo_initials,
@@ -635,6 +637,7 @@ def borrowing():
             'start': pres.start_year,
             'end': pres.end_year or 'present',
             'years_in_office': years_in_office,
+            'is_incumbent': is_incumbent,
             'inherited': round(inherited, 1),
             'left': round(left, 1),
             'debt_added': round(debt_added, 1),
@@ -645,6 +648,8 @@ def borrowing():
             'd2g_inherited': prev_last.debt_to_gdp,
             'd2g_left': last.debt_to_gdp,
             'inherited_label': 'Inherited' if i > 0 else 'Start',
+            'left_label': 'So Far' if is_incumbent else 'Left',
+            'added_label': 'Added So Far' if is_incumbent else 'Net Added',
             'yearly': yearly,
             'max_change': round(max_change, 1),
         })
