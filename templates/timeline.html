@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Historical Timeline — Nigeria Debt Clock{% endblock %}
+{% block description %}Key economic and political events that shaped Nigeria's debt trajectory since 1999{% endblock %}
+
+{% block extra_styles %}
+.tl-container { position: relative; padding-left: 2.5rem; }
+.tl-line { position: absolute; left: 1rem; top: 0; bottom: 0; width: 2px; background: var(--border); }
+.tl-item { position: relative; margin-bottom: 1.5rem; }
+.tl-dot { position: absolute; left: -1.85rem; top: 0.35rem; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--bg); z-index: 1; }
+.tl-year { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 800; color: var(--ng-green); margin-bottom: 0.25rem; }
+.tl-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; transition: all 0.3s; }
+.tl-card:hover { border-color: var(--border-hover); transform: translateX(4px); }
+.tl-event { font-size: 0.85rem; font-weight: 600; }
+.tl-cat { display: inline-block; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 0.15rem 0.5rem; border-radius: 50px; margin-top: 0.35rem; }
+.cat-debt { background: rgba(255,82,82,0.1); color: var(--red); }
+.cat-economic { background: rgba(255,215,64,0.1); color: var(--gold); }
+.cat-political { background: rgba(0,148,1,0.1); color: var(--ng-green); }
+.cat-global { background: rgba(68,138,255,0.1); color: var(--blue); }
+.tl-filter { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.tl-filter-btn { background: var(--bg-card); border: 1px solid var(--border); border-radius: 50px; padding: 0.35rem 0.85rem; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+.tl-filter-btn:hover, .tl-filter-btn.active { border-color: var(--ng-green); color: var(--ng-green); }
+@media (max-width: 768px) { .tl-container { padding-left: 2rem; } .tl-dot { left: -1.55rem; } }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(0,148,1,0.1);color:var(--ng-green);"><i class="bi bi-clock-history"></i></div>
+            <div>
+                <div class="section-title">Historical Events Timeline</div>
+                <div class="section-sub">Key moments that shaped Nigeria's debt trajectory (1999–present)</div>
+            </div>
+        </div>
+
+        <div class="tl-filter">
+            <button class="tl-filter-btn active" onclick="filterTL('all',this)">All</button>
+            <button class="tl-filter-btn" onclick="filterTL('debt',this)">Debt</button>
+            <button class="tl-filter-btn" onclick="filterTL('economic',this)">Economic</button>
+            <button class="tl-filter-btn" onclick="filterTL('political',this)">Political</button>
+            <button class="tl-filter-btn" onclick="filterTL('global',this)">Global</button>
+        </div>
+
+        <!-- Chart with event markers -->
+        <div class="chart-card" style="margin-bottom:2rem;">
+            <div class="chart-head"><div>
+                <div class="section-title" style="font-size:0.88rem;"><i class="bi bi-graph-up-arrow" style="color:var(--red);"></i> Debt Trajectory with Key Events</div>
+                <div class="section-sub">Annotated debt chart showing pivotal moments</div>
+            </div></div>
+            <div class="chart-body" style="height:400px;"><canvas id="eventChart"></canvas></div>
+        </div>
+
+        <div class="tl-container">
+            <div class="tl-line"></div>
+            {% for ev in events %}
+            <div class="tl-item" data-cat="{{ ev.category }}">
+                <div class="tl-dot" style="background:{% if ev.category == 'debt' %}var(--red){% elif ev.category == 'economic' %}var(--gold){% elif ev.category == 'political' %}var(--ng-green){% else %}var(--blue){% endif %};"></div>
+                <div class="tl-year"><i class="bi bi-{{ ev.icon }}"></i> {{ ev.year }}</div>
+                <div class="tl-card">
+                    <div class="tl-event">{{ ev.event }}</div>
+                    <span class="tl-cat cat-{{ ev.category }}">{{ ev.category }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const timeline = {{ timeline | tojson }};
+const eras = {{ eras | tojson }};
+const events = {{ events | tojson }};
+
+function filterTL(cat, btn) {
+    document.querySelectorAll('.tl-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tl-item').forEach(el => {
+        el.style.display = (cat === 'all' || el.dataset.cat === cat) ? '' : 'none';
+    });
+}
+
+const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+const tc = () => isDark() ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
+const gc = () => isDark() ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+
+// Annotated debt chart
+const debtEvents = events.filter(e => ['debt','economic'].includes(e.category));
+const annotations = {};
+debtEvents.forEach((ev, i) => {
+    const idx = timeline.years.indexOf(ev.year);
+    if (idx < 0) return;
+    annotations['ev' + i] = {
+        type: 'line', xMin: idx, xMax: idx,
+        borderColor: '#ff525260', borderWidth: 1, borderDash: [4, 3],
+        label: { display: true, content: ev.year + '', position: 'start',
+                 backgroundColor: '#ff525280', color: '#fff',
+                 font: { size: 9, weight: '600' }, padding: 3 }
+    };
+});
+
+new Chart(document.getElementById('eventChart'), {
+    type: 'line',
+    data: {
+        labels: timeline.years,
+        datasets: [{
+            label: 'Total Debt (USD B)',
+            data: timeline.total_debt,
+            borderColor: '#ff5252', backgroundColor: '#ff525215',
+            fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 4,
+            pointBackgroundColor: timeline.years.map(y =>
+                events.some(e => e.year === y) ? '#ffd740' : '#ff5252'
+            ),
+            pointBorderColor: timeline.years.map(y =>
+                events.some(e => e.year === y) ? '#ffd740' : '#ff5252'
+            ),
+            pointRadius: timeline.years.map(y =>
+                events.some(e => e.year === y) ? 6 : 3
+            ),
+        }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    afterLabel: function(ctx) {
+                        const yr = timeline.years[ctx.dataIndex];
+                        const ev = events.find(e => e.year === yr);
+                        return ev ? '\n' + ev.event : '';
+                    }
+                }
+            }
+        },
+        scales: {
+            x: { grid: { color: gc() }, ticks: { color: tc() } },
+            y: { grid: { color: gc() }, ticks: { color: tc(), callback: v => '$' + v + 'B' } }
+        }
+    }
+});
+</script>
+{% endblock %}

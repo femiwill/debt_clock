@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Page Not Found — Nigeria Debt Clock{% endblock %}
+
+{% block extra_styles %}
+.error-page { text-align: center; padding: 4rem 1rem; }
+.error-code { font-family: 'JetBrains Mono', monospace; font-size: 6rem; font-weight: 900; color: var(--ng-green); opacity: 0.3; line-height: 1; }
+.error-title { font-size: 1.5rem; font-weight: 800; margin: 1rem 0 0.5rem; }
+.error-desc { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 2rem; max-width: 400px; margin-left: auto; margin-right: auto; }
+.error-links { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+.error-link { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.6rem 1.25rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600; text-decoration: none; transition: all 0.2s; }
+.error-link-primary { background: var(--ng-green); color: #fff; }
+.error-link-primary:hover { opacity: 0.85; }
+.error-link-secondary { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); }
+.error-link-secondary:hover { border-color: var(--ng-green); color: var(--ng-green); }
+.error-debt { margin-top: 3rem; font-size: 0.75rem; color: var(--text-tertiary); }
+.error-debt span { color: var(--red); font-family: 'JetBrains Mono', monospace; font-weight: 800; }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="error-page">
+            <div class="error-code">404</div>
+            <div class="error-title">Page Not Found</div>
+            <div class="error-desc">
+                This page doesn't exist — unlike Nigeria's debt, which very much does.
+            </div>
+            <div class="error-links">
+                <a href="/" class="error-link error-link-primary"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                <a href="/borrowing" class="error-link error-link-secondary"><i class="bi bi-cash-stack"></i> Borrowing</a>
+                <a href="/quiz" class="error-link error-link-secondary"><i class="bi bi-question-circle"></i> Quiz</a>
+            </div>
+            <div class="error-debt">
+                While you were looking for this page, Nigeria's debt grew by approximately <span id="err404debt">$0</span>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+    const perSec = 308; // ~$308/sec based on $9.7B annual increase
+    let acc = 0;
+    const el = document.getElementById('err404debt');
+    setInterval(() => {
+        acc += perSec;
+        el.textContent = '$' + Math.round(acc).toLocaleString();
+    }, 1000);
+})();
+</script>
+{% endblock %}

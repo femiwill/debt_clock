@@ -132,6 +132,14 @@
                 <div class="tc-value mono" id="tickOil" style="color:#78909c;">${{ '%.0f'|format(latest.oil_price_usd) }}/bbl</div>
                 <div class="tc-sub">Annual average price</div>
             </div>
+            {% if debt_per_second > 0 %}
+            <div class="ticker-card" style="border-color:var(--red)22;">
+                <div class="tc-accent" style="background:var(--red);"></div>
+                <div class="tc-label">Debt Per Second</div>
+                <div class="tc-value tc-red mono" id="debtSecond">${{ '%.0f'|format(debt_per_second) }}</div>
+                <div class="tc-sub" id="debtAccum">Accumulating in real-time</div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </section>
@@ -469,5 +477,20 @@ makeChart('litresChart', [ds('Litres/Wage',timeline.litres_per_wage,'#00e676',0,
 makeChart('gdpChart', [ds('GDP',timeline.gdp,'#448aff',0,1)], v=>'$'+v+'B');
 makeChart('debtGdpChart', [ds('Debt/GDP',timeline.debt_to_gdp,'#009401',0,1)], v=>v+'%');
 makeChart('nairaChart', [ds('Purchasing Power',timeline.naira_purchasing_power,'#ffd740',0,1)], v=>'\u20A6'+v);
+
+// Debt per second live counter
+(function(){
+    const el = document.getElementById('debtSecond');
+    const accEl = document.getElementById('debtAccum');
+    if(!el) return;
+    const perSec = {{ debt_per_second }};
+    let accumulated = 0;
+    setInterval(()=>{
+        accumulated += perSec;
+        el.textContent = '$' + Math.round(perSec).toLocaleString();
+        if(accumulated > 1e6) accEl.textContent = '+$' + (accumulated/1e6).toFixed(2) + 'M since you opened this page';
+        else accEl.textContent = '+$' + Math.round(accumulated).toLocaleString() + ' since you opened this page';
+    }, 1000);
+})();
 </script>
 {% endblock %}

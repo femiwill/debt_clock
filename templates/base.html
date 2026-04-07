@@ -6,6 +6,8 @@
     <title>{% block title %}Nigeria Debt Clock{% endblock %}</title>
     <meta name="description" content="{% block description %}Track Nigeria's public debt, reserves, exchange rates, and fuel prices since 1999{% endblock %}">
     <meta name="theme-color" content="#009401">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="manifest" href="/static/manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
@@ -95,6 +97,20 @@
             .newsletter input[type="email"] { width: 180px; }
         }
 
+        /* Print */
+        @media print {
+            body { background: #fff; color: #000; }
+            .header, .nav, .newsletter, .footer, .theme-toggle, .slider-bar, .slider-btn { display: none !important; }
+            .container { max-width: 100%; }
+            .card, .chart-card, .ticker-card, .pres-card, .scenario-card, .assumption-box {
+                background: #fff; border: 1px solid #ddd; box-shadow: none; break-inside: avoid;
+            }
+            .tc-value, .sc-value, .pres-stat-values span { color: #000 !important; }
+            .section { padding: 0.5rem 0; }
+            .chart-body { height: 250px !important; }
+            a { color: #000; text-decoration: none; }
+        }
+
         {% block extra_styles %}{% endblock %}
     </style>
 </head>
@@ -129,6 +145,9 @@
             <a href="/breakdown" class="{% if '/breakdown' in request.path %}active{% endif %}"><i class="bi bi-pie-chart"></i> Debt Breakdown</a>
             <a href="/states" class="{% if '/states' in request.path %}active{% endif %}"><i class="bi bi-geo-alt"></i> State Debt</a>
             <a href="/africa" class="{% if '/africa' in request.path %}active{% endif %}"><i class="bi bi-globe-americas"></i> Africa Peers</a>
+            <a href="/projection" class="{% if '/projection' in request.path %}active{% endif %}"><i class="bi bi-graph-up-arrow"></i> Projection</a>
+            <a href="/timeline" class="{% if '/timeline' in request.path %}active{% endif %}"><i class="bi bi-clock-history"></i> Timeline</a>
+            <a href="/glossary" class="{% if '/glossary' in request.path %}active{% endif %}"><i class="bi bi-book"></i> Glossary</a>
             <a href="/quiz" class="{% if '/quiz' in request.path %}active{% endif %}"><i class="bi bi-question-circle"></i> Quiz</a>
         </div>
     </div>
@@ -176,6 +195,7 @@ function toggleTheme() {
     }
 })();
 </script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/static/sw.js');}</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 {% block scripts %}{% endblock %}
 </body>

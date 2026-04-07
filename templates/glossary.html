@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Glossary — Nigeria Debt Clock{% endblock %}
+{% block description %}Definitions of key financial and economic terms used in the Nigeria Debt Clock{% endblock %}
+
+{% block extra_styles %}
+.glossary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1rem; }
+.glossary-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; transition: all 0.3s; }
+.glossary-card:hover { border-color: var(--ng-green); transform: translateY(-2px); }
+.glossary-term { font-size: 0.9rem; font-weight: 700; color: var(--ng-green); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+.glossary-def { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; }
+.glossary-search { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.65rem 1rem; width: 100%; max-width: 400px; color: var(--text-primary); font-size: 0.85rem; outline: none; margin-bottom: 1.5rem; }
+.glossary-search:focus { border-color: var(--ng-green); }
+@media (max-width: 768px) { .glossary-grid { grid-template-columns: 1fr; } }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(68,138,255,0.1);color:var(--blue);"><i class="bi bi-book"></i></div>
+            <div>
+                <div class="section-title">Glossary of Terms</div>
+                <div class="section-sub">Understanding the financial jargon behind Nigeria's debt numbers</div>
+            </div>
+        </div>
+
+        <input type="text" class="glossary-search" placeholder="Search terms..." oninput="filterGlossary(this.value)">
+
+        <div class="glossary-grid" id="glossaryGrid">
+            {% for term, definition in glossary.items() %}
+            <div class="glossary-card" data-term="{{ term|lower }}">
+                <div class="glossary-term"><i class="bi bi-info-circle"></i> {{ term }}</div>
+                <div class="glossary-def">{{ definition }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterGlossary(q) {
+    q = q.toLowerCase();
+    document.querySelectorAll('.glossary-card').forEach(card => {
+        const term = card.dataset.term;
+        const def = card.querySelector('.glossary-def').textContent.toLowerCase();
+        card.style.display = (term.includes(q) || def.includes(q)) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

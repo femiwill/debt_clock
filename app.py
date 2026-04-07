@@ -250,8 +250,48 @@ QUIZ_QUESTIONS = [
      'correct': 2, 'explanation': 'With N3,000 wage and N20/litre petrol, a worker could buy 150 litres in 1999.'},
 ]
 
+HISTORICAL_EVENTS = [
+    {'year': 1999, 'event': 'Return to democracy — Obasanjo inaugurated', 'category': 'political', 'icon': 'flag'},
+    {'year': 2000, 'event': 'Minimum wage raised to N5,500', 'category': 'economic', 'icon': 'cash'},
+    {'year': 2003, 'event': 'Banking sector consolidation begins', 'category': 'economic', 'icon': 'bank'},
+    {'year': 2005, 'event': 'Paris Club grants $18B debt relief', 'category': 'debt', 'icon': 'award'},
+    {'year': 2006, 'event': 'Nigeria exits Paris Club debt — external debt drops to $3.5B', 'category': 'debt', 'icon': 'graph-down-arrow'},
+    {'year': 2007, 'event': "Yar'Adua takes office; reserves near $53B peak", 'category': 'political', 'icon': 'flag'},
+    {'year': 2008, 'event': 'Global financial crisis — oil crashes from $147 to $36', 'category': 'global', 'icon': 'globe'},
+    {'year': 2010, 'event': "Yar'Adua dies in office; Jonathan becomes president", 'category': 'political', 'icon': 'flag'},
+    {'year': 2011, 'event': 'Minimum wage raised to N18,000; fuel subsidy protests', 'category': 'economic', 'icon': 'megaphone'},
+    {'year': 2012, 'event': 'Partial subsidy removal — petrol jumps to N97', 'category': 'economic', 'icon': 'fuel-pump'},
+    {'year': 2014, 'event': "GDP rebased — Nigeria becomes Africa's largest economy", 'category': 'economic', 'icon': 'trophy'},
+    {'year': 2015, 'event': 'Buhari elected; oil price collapse begins', 'category': 'political', 'icon': 'flag'},
+    {'year': 2016, 'event': 'First recession in 25 years; naira devalued to N305', 'category': 'economic', 'icon': 'exclamation-triangle'},
+    {'year': 2019, 'event': 'Minimum wage raised to N30,000', 'category': 'economic', 'icon': 'cash'},
+    {'year': 2020, 'event': 'COVID-19 pandemic; second recession; oil crashes', 'category': 'global', 'icon': 'virus'},
+    {'year': 2022, 'event': 'Ways & Means N22.7T securitized into public debt', 'category': 'debt', 'icon': 'exclamation-circle'},
+    {'year': 2023, 'event': 'Tinubu removes fuel subsidy; naira floated; petrol triples', 'category': 'economic', 'icon': 'lightning'},
+    {'year': 2024, 'event': 'Inflation hits 31.4%; minimum wage raised to N70,000', 'category': 'economic', 'icon': 'arrow-up-circle'},
+    {'year': 2025, 'event': 'Total debt reaches $99B; reserves recover to $45.7B', 'category': 'debt', 'icon': 'graph-up-arrow'},
+]
 
-# ════════════��═════════════════════════════════════════════════════════════════
+GLOSSARY = {
+    'Total Public Debt': 'The sum of all money owed by the federal government, including both external (foreign) and domestic (local) borrowing.',
+    'External Debt': 'Money borrowed from foreign sources — multilateral institutions (World Bank, IMF), bilateral lenders (China, France), and commercial creditors (Eurobond holders).',
+    'Domestic Debt': 'Money borrowed within Nigeria through instruments like FGN Bonds, Treasury Bills, Sukuk, and the securitized Ways & Means advances from CBN.',
+    'External Reserves': 'Foreign currency holdings maintained by the Central Bank of Nigeria (CBN) to back the naira and pay for imports.',
+    'Debt-to-GDP Ratio': 'Total debt as a percentage of GDP. Nigeria\'s ~35% is low compared to peers, but the revenue-to-debt ratio is the bigger concern.',
+    'Debt Service': 'Annual payments to service existing debt (principal + interest). Nigeria spends ~64% of revenue on debt service.',
+    'Ways & Means': 'CBN overdraft to the federal government. N22.7T was securitized (converted to bonds) in 2023, instantly adding to official debt.',
+    'Paris Club': 'A group of major creditor countries that coordinates debt relief. Nigeria received $18B relief in 2005-2006 under Obasanjo.',
+    'Eurobonds': 'Dollar-denominated bonds issued in international capital markets. They carry higher interest rates but provide foreign currency.',
+    'GDP': 'Gross Domestic Product — the total value of all goods and services produced in Nigeria in a year.',
+    'Inflation Rate': 'The annual percentage increase in consumer prices (CPI). High inflation erodes purchasing power.',
+    'Exchange Rate': 'The rate at which naira trades against the US dollar. The parallel (black market) rate often diverges significantly from the official CBN rate.',
+    'Fuel Subsidy': 'Government payments to keep petrol prices artificially low. Removed by Tinubu in June 2023, causing prices to triple overnight.',
+    'Debt Per Capita': 'Total public debt divided by population. Each Nigerian notionally carries ~$430 in public debt (2025).',
+    'Fiscal Deficit': 'The gap between government revenue and spending. When spending exceeds revenue, the deficit is financed by borrowing.',
+}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # SEED DATA
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -492,12 +532,20 @@ def index():
             'gdp': d.gdp_usd,
         })
 
+    # Debt per second (based on last year's increase)
+    debt_per_second = 0
+    if len(all_data) >= 2:
+        last_two = all_data[-2:]
+        annual_increase_usd = (last_two[1].total_debt_usd - last_two[0].total_debt_usd) * 1e9
+        debt_per_second = annual_increase_usd / (365.25 * 24 * 3600)
+
     return render_template('index.html',
                            presidents=presidents,
                            pres_summaries=pres_summaries,
                            latest=latest,
                            per_citizen_debt=per_citizen_debt,
                            debt_service_pct=debt_service_pct,
+                           debt_per_second=debt_per_second,
                            timeline=timeline,
                            ticker_by_year=ticker_by_year,
                            eras=eras,
@@ -770,10 +818,135 @@ def robots_txt():
     return Response("\n".join(lines), mimetype="text/plain")
 
 
+@app.route('/projection')
+def projection():
+    all_data = EconomicData.query.order_by(EconomicData.year).all()
+    latest = all_data[-1]
+    # Calculate 5-year CAGR for base growth rate
+    recent = [d for d in all_data if d.year >= latest.year - 5]
+    if len(recent) >= 2:
+        first_val = recent[0].total_debt_usd
+        last_val = recent[-1].total_debt_usd
+        span = recent[-1].year - recent[0].year
+        base_growth = round(((last_val / first_val) ** (1 / span) - 1) * 100, 1) if span > 0 and first_val > 0 else 10.0
+    else:
+        base_growth = 10.0
+    return render_template('projection.html',
+                           base_growth=base_growth,
+                           current_debt=latest.total_debt_usd,
+                           current_year=latest.year,
+                           hist_years=[d.year for d in all_data],
+                           hist_debt=[d.total_debt_usd for d in all_data])
+
+
+@app.route('/timeline')
+def timeline_page():
+    all_data = EconomicData.query.order_by(EconomicData.year).all()
+    presidents = President.query.order_by(President.start_year).all()
+    eras = [{'name': p.name.split()[-1], 'start': p.start_year,
+             'end': p.end_year or 2026, 'color': p.party_color} for p in presidents]
+    tl = {
+        'years': [d.year for d in all_data],
+        'total_debt': [d.total_debt_usd for d in all_data],
+        'reserves': [d.external_reserves_usd for d in all_data],
+        'fx_official': [d.exchange_rate_official for d in all_data],
+        'petrol': [d.petrol_price for d in all_data],
+    }
+    return render_template('timeline.html', events=HISTORICAL_EVENTS,
+                           timeline=tl, eras=eras)
+
+
+@app.route('/glossary')
+def glossary():
+    return render_template('glossary.html', glossary=GLOSSARY)
+
+
+@app.route('/admin', methods=['GET', 'POST'])
+def admin():
+    admin_pw = os.environ.get('ADMIN_PASSWORD', 'debt-admin-2026')
+    msg = None
+    msg_type = None
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'login':
+            if request.form.get('password') == admin_pw:
+                # Simple cookie-based auth
+                resp = redirect(url_for('admin'))
+                resp.set_cookie('admin_auth', admin_pw, max_age=3600, httponly=True,
+                                samesite='Lax')
+                return resp
+            msg = 'Incorrect password.'
+            msg_type = 'error'
+
+        elif request.cookies.get('admin_auth') == admin_pw:
+            if action == 'add_data':
+                try:
+                    dp = EconomicData(
+                        president_id=int(request.form['president_id']),
+                        year=int(request.form['year']),
+                        external_debt_usd=float(request.form.get('external_debt_usd') or 0),
+                        domestic_debt_ngn_tn=float(request.form.get('domestic_debt_ngn_tn') or 0),
+                        total_debt_usd=float(request.form.get('total_debt_usd') or 0),
+                        external_reserves_usd=float(request.form.get('external_reserves_usd') or 0),
+                        exchange_rate_official=float(request.form.get('exchange_rate_official') or 0),
+                        exchange_rate_parallel=float(request.form.get('exchange_rate_parallel') or 0),
+                        petrol_price=float(request.form.get('petrol_price') or 0),
+                        diesel_price=float(request.form.get('diesel_price') or 0),
+                        gdp_usd=float(request.form.get('gdp_usd') or 0),
+                        gdp_growth=float(request.form.get('gdp_growth') or 0),
+                        population=float(request.form.get('population') or 0),
+                        debt_to_gdp=float(request.form.get('debt_to_gdp') or 0),
+                        federal_revenue_ngn_tn=float(request.form.get('federal_revenue_ngn_tn') or 0),
+                        debt_service_ngn_tn=float(request.form.get('debt_service_ngn_tn') or 0),
+                        inflation_rate=float(request.form.get('inflation_rate') or 0),
+                        oil_price_usd=float(request.form.get('oil_price_usd') or 0),
+                        minimum_wage=float(request.form.get('minimum_wage') or 0),
+                    )
+                    db.session.add(dp)
+                    db.session.commit()
+                    msg = f'Data for {dp.year} added successfully.'
+                    msg_type = 'success'
+                except Exception as e:
+                    msg = f'Error: {str(e)}'
+                    msg_type = 'error'
+
+            elif action == 'delete_data':
+                dp_id = request.form.get('dp_id')
+                dp = EconomicData.query.get(int(dp_id))
+                if dp:
+                    db.session.delete(dp)
+                    db.session.commit()
+                    msg = f'Data point for {dp.year} deleted.'
+                    msg_type = 'success'
+
+    authed = request.cookies.get('admin_auth') == admin_pw
+    presidents = President.query.order_by(President.start_year).all() if authed else []
+    data = EconomicData.query.order_by(EconomicData.year.desc()).all() if authed else []
+    subscribers = Subscriber.query.order_by(Subscriber.subscribed_at.desc()).all() if authed else []
+
+    return render_template('admin.html', authed=authed, presidents=presidents,
+                           data=data, subscribers=subscribers, msg=msg, msg_type=msg_type)
+
+
+@app.route('/admin/logout')
+def admin_logout():
+    resp = redirect(url_for('admin'))
+    resp.delete_cookie('admin_auth')
+    return resp
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+
 @app.route('/sitemap.xml')
 def sitemap_xml():
     base = request.url_root.replace('http://', 'https://').rstrip('/')
-    pages = ['/', '/borrowing', '/compare', '/breakdown', '/states', '/africa', '/quiz']
+    pages = ['/', '/borrowing', '/compare', '/breakdown', '/states', '/africa',
+             '/quiz', '/projection', '/timeline', '/glossary']
     xml = ['<?xml version="1.0" encoding="UTF-8"?>',
            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for page in pages:
