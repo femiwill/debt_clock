@@ -630,6 +630,7 @@ def borrowing():
         borrowing_list.append({
             'name': pres.name,
             'initials': pres.photo_initials,
+            'party': pres.party,
             'party_color': pres.party_color,
             'start': pres.start_year,
             'end': pres.end_year or 'present',

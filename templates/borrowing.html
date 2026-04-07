@@ -28,16 +28,25 @@
 .rank-medal { font-size: 1.1rem; }
 
 /* Year-by-year */
-.yby-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+.yby-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
 .yby-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-.yby-head { padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem; }
-.yby-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.65rem; color: #fff; flex-shrink: 0; }
-.yby-body { padding: 0.75rem 1.25rem; }
-.yby-row { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid var(--border); font-size: 0.78rem; }
+.yby-head { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem; }
+.yby-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.7rem; color: #fff; flex-shrink: 0; }
+.yby-summary { display: flex; gap: 1rem; padding: 0.75rem 1.25rem; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border); }
+.yby-summary-item { flex: 1; text-align: center; }
+.yby-summary-label { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 0.2rem; }
+.yby-summary-val { font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; font-weight: 800; }
+.yby-body { padding: 0.5rem 0; }
+.yby-header-row { display: grid; grid-template-columns: 50px 1fr 90px 80px; gap: 0.5rem; align-items: center; padding: 0.4rem 1.25rem; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); border-bottom: 1px solid var(--border); }
+.yby-row { display: grid; grid-template-columns: 50px 1fr 90px 80px; gap: 0.5rem; align-items: center; padding: 0.55rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 0.8rem; transition: background 0.15s; }
 .yby-row:last-child { border-bottom: none; }
-.yby-year { color: var(--text-secondary); font-weight: 600; }
-.yby-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
-.yby-bar { height: 4px; border-radius: 2px; margin-top: 0.2rem; }
+.yby-row:hover { background: var(--bg-card-hover); }
+.yby-year { font-weight: 700; color: var(--text-secondary); font-size: 0.78rem; }
+.yby-bar-wrap { position: relative; height: 20px; display: flex; align-items: center; }
+.yby-bar-track { position: absolute; left: 0; right: 0; height: 8px; background: var(--border); border-radius: 4px; }
+.yby-bar-fill { position: absolute; height: 8px; border-radius: 4px; transition: width 0.3s; min-width: 2px; }
+.yby-change { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.78rem; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 0.25rem; }
+.yby-total { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 0.72rem; color: var(--text-secondary); text-align: right; }
 
 /* Insight box */
 .insight-box { background: linear-gradient(135deg, rgba(0,148,1,0.06), var(--bg-card)); border: 1px solid var(--ng-green)33; border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem; }
@@ -192,7 +201,7 @@
                 <div class="section-icon" style="background:rgba(68,138,255,0.1);color:var(--blue);"><i class="bi bi-calendar3"></i></div>
                 <div>
                     <div class="section-title">Year-by-Year Breakdown</div>
-                    <div class="section-sub">Annual debt change under each president</div>
+                    <div class="section-sub">See exactly how much was borrowed (or repaid) each year. Bars show relative size of change.</div>
                 </div>
             </div>
             <div class="yby-grid">
@@ -201,21 +210,51 @@
                     <div class="yby-head" style="background:linear-gradient(135deg, {{ b.party_color }}12, transparent);">
                         <div class="yby-avatar" style="background:{{ b.party_color }};">{{ b.initials }}</div>
                         <div>
-                            <div style="font-weight:700;font-size:0.85rem;">{{ b.name }}</div>
-                            <div style="font-size:0.68rem;color:var(--text-tertiary);">{{ b.start }}–{{ b.end }} &middot; Total: {{ '+' if b.debt_added > 0 }}${{ '%.1f'|format(b.debt_added) }}B</div>
+                            <div style="font-weight:700;font-size:0.88rem;">{{ b.name }}</div>
+                            <div style="font-size:0.68rem;color:var(--text-tertiary);">{{ b.start }}–{{ b.end }} &middot; {{ b.party }}</div>
+                        </div>
+                    </div>
+                    <!-- Quick summary strip -->
+                    <div class="yby-summary">
+                        <div class="yby-summary-item">
+                            <div class="yby-summary-label">Inherited</div>
+                            <div class="yby-summary-val" style="color:var(--gold);">${{ '%.1f'|format(b.inherited) }}B</div>
+                        </div>
+                        <div class="yby-summary-item">
+                            <div class="yby-summary-label">Left With</div>
+                            <div class="yby-summary-val" style="color:var(--blue);">${{ '%.1f'|format(b.left) }}B</div>
+                        </div>
+                        <div class="yby-summary-item">
+                            <div class="yby-summary-label">Net Added</div>
+                            <div class="yby-summary-val" style="color:{% if b.debt_added < 0 %}var(--green){% else %}var(--red){% endif %};">{{ '+' if b.debt_added > 0 }}${{ '%.1f'|format(b.debt_added) }}B</div>
+                        </div>
+                        <div class="yby-summary-item">
+                            <div class="yby-summary-label">Per Year</div>
+                            <div class="yby-summary-val" style="color:{% if b.annual_rate < 0 %}var(--green){% elif b.annual_rate > 5 %}var(--red){% else %}var(--gold){% endif %};">${{ '%.1f'|format(b.annual_rate) }}B</div>
                         </div>
                     </div>
                     <div class="yby-body">
+                        <!-- Column headers -->
+                        <div class="yby-header-row">
+                            <span>Year</span>
+                            <span>Borrowed / Repaid</span>
+                            <span style="text-align:right;">Change</span>
+                            <span style="text-align:right;">Total Debt</span>
+                        </div>
+                        {% set max_change = b.max_change if b.max_change > 0 else 1 %}
                         {% for yr in b.yearly %}
                         <div class="yby-row">
                             <span class="yby-year">{{ yr.year }}</span>
-                            <span class="yby-val" style="color:{% if yr.change < 0 %}var(--green){% elif yr.change > 5 %}var(--red){% else %}var(--gold){% endif %};">
-                                ${{ '%.1f'|format(yr.total) }}B
-                                <span style="font-size:0.65rem;opacity:0.7;">({{ '+' if yr.change > 0 }}{{ '%.1f'|format(yr.change) }})</span>
-                            </span>
+                            <div class="yby-bar-wrap">
+                                <div class="yby-bar-track"></div>
+                                <div class="yby-bar-fill" style="width:{{ (yr.change|abs / max_change * 100)|round|int }}%;background:{% if yr.change < 0 %}var(--green){% elif yr.change > 10 %}var(--red){% elif yr.change > 5 %}var(--orange){% else %}{{ b.party_color }}{% endif %};"></div>
+                            </div>
+                            <div class="yby-change" style="color:{% if yr.change < 0 %}var(--green){% elif yr.change > 10 %}var(--red){% elif yr.change > 5 %}var(--orange){% else %}var(--text-primary){% endif %};">
+                                {% if yr.change < 0 %}<i class="bi bi-arrow-down-short" style="font-size:1rem;"></i>{% elif yr.change > 0 %}<i class="bi bi-arrow-up-short" style="font-size:1rem;"></i>{% else %}<i class="bi bi-dash" style="font-size:1rem;"></i>{% endif %}
+                                ${{ '%.1f'|format(yr.change|abs) }}B
+                            </div>
+                            <div class="yby-total">${{ '%.1f'|format(yr.total) }}B</div>
                         </div>
-                        {% set max_change = b.max_change if b.max_change > 0 else 1 %}
-                        <div class="yby-bar" style="width:{{ (yr.change|abs / max_change * 100)|round }}%;background:{% if yr.change < 0 %}var(--green){% else %}{{ b.party_color }}{% endif %};"></div>
                         {% endfor %}
                     </div>
                 </div>
