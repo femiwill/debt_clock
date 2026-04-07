@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Debt Calculator — Nigeria Debt Clock{% endblock %}
+{% block description %}See what your state's debt could fund — teachers, schools, hospitals, and more{% endblock %}
+
+{% block extra_styles %}
+.calc-select { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.calc-select select { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 1rem; color: var(--text-primary); font-size: 0.85rem; outline: none; min-width: 200px; }
+.calc-select select:focus { border-color: var(--ng-green); }
+.calc-debt { font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; font-weight: 800; color: var(--red); }
+.calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.calc-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; text-align: center; transition: all 0.3s; }
+.calc-card:hover { border-color: var(--ng-green); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+.calc-icon { font-size: 1.5rem; color: var(--text-tertiary); margin-bottom: 0.5rem; }
+.calc-count { font-family: 'JetBrains Mono', monospace; font-size: 1.8rem; font-weight: 800; color: var(--gold); }
+.calc-item-name { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.25rem; }
+.calc-cost { font-size: 0.65rem; color: var(--text-tertiary); margin-top: 0.35rem; }
+.calc-fed { background: linear-gradient(135deg, rgba(255,82,82,0.06), var(--bg-card)); border: 1px solid rgba(255,82,82,0.15); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem; text-align: center; }
+.calc-fed-label { font-size: 0.72rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.35rem; }
+.calc-fed-val { font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 800; color: var(--red); }
+.calc-toggle { display: flex; gap: 0.5rem; }
+.calc-toggle button { background: var(--bg-card); border: 1px solid var(--border); border-radius: 50px; padding: 0.35rem 0.85rem; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+.calc-toggle button.active { border-color: var(--ng-green); color: var(--ng-green); }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(255,215,64,0.1);color:var(--gold);"><i class="bi bi-calculator"></i></div>
+            <div>
+                <div class="section-title">Debt Comparison Calculator</div>
+                <div class="section-sub">What could your state's debt — or the federal debt — actually build?</div>
+            </div>
+        </div>
+
+        <div class="calc-select">
+            <div>
+                <label style="font-size:0.68rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;">Choose a source:</label><br>
+                <div class="calc-toggle" style="margin-top:0.35rem;">
+                    <button class="active" id="fedBtn" onclick="setMode('federal')">Federal Debt</button>
+                    <button id="stateBtn" onclick="setMode('state')">State Debt</button>
+                </div>
+            </div>
+            <div id="stateSelect" style="display:none;">
+                <label style="font-size:0.68rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;">Select State:</label><br>
+                <select id="statePicker" onchange="recalculate()" style="margin-top:0.35rem;">
+                    {% for s in states %}
+                    <option value="{{ s.total }}">{{ s.name }} (N{{ '{:,.0f}'.format(s.total) }}B)</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <div style="font-size:0.68rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;">Current Debt</div>
+                <div class="calc-debt" id="calcDebtDisplay"></div>
+            </div>
+        </div>
+
+        <div class="calc-grid" id="calcGrid">
+            {% for item in items %}
+            <div class="calc-card" data-cost="{{ item.cost_ngn }}">
+                <div class="calc-icon"><i class="bi bi-{{ item.icon }}"></i></div>
+                <div class="calc-count" data-count>—</div>
+                <div class="calc-item-name">{{ item.name }}</div>
+                <div class="calc-cost">N{{ '{:,.0f}'.format(item.cost_ngn) }} each</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const FEDERAL_DEBT_NGN_B = 80.6 * 1550;  // domestic + external converted at official rate (approximate total in NGN B)
+let mode = 'federal';
+
+function setMode(m) {
+    mode = m;
+    document.getElementById('fedBtn').classList.toggle('active', m === 'federal');
+    document.getElementById('stateBtn').classList.toggle('active', m === 'state');
+    document.getElementById('stateSelect').style.display = m === 'state' ? '' : 'none';
+    recalculate();
+}
+
+function recalculate() {
+    let debtNgnB;
+    if (mode === 'federal') {
+        debtNgnB = FEDERAL_DEBT_NGN_B;
+    } else {
+        debtNgnB = parseFloat(document.getElementById('statePicker').value);
+    }
+    document.getElementById('calcDebtDisplay').textContent = 'N' + Math.round(debtNgnB).toLocaleString() + 'B';
+    const debtNgn = debtNgnB * 1e9; // convert billions to actual
+    document.querySelectorAll('.calc-card').forEach(card => {
+        const cost = parseInt(card.dataset.cost);
+        const count = Math.floor(debtNgn / cost);
+        card.querySelector('[data-count]').textContent = count.toLocaleString();
+    });
+}
+
+recalculate();
+</script>
+{% endblock %}

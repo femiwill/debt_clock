@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Annual Report {{ year }} — Nigeria Debt Clock{% endblock %}
+{% block description %}Downloadable snapshot of Nigeria's key economic indicators for {{ year }}{% endblock %}
+
+{% block extra_styles %}
+.report-controls { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.report-controls select { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 1rem; color: var(--text-primary); font-size: 0.85rem; outline: none; }
+.report-controls select:focus { border-color: var(--ng-green); }
+.report-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.5rem; }
+.report-header { background: linear-gradient(135deg, rgba(0,148,1,0.1), transparent); padding: 1.5rem; border-bottom: 1px solid var(--border); }
+.report-title { font-size: 1.3rem; font-weight: 800; }
+.report-year { font-family: 'JetBrains Mono', monospace; font-size: 2.5rem; font-weight: 900; color: var(--ng-green); }
+.report-pres { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.25rem; }
+.report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0; }
+.report-stat { padding: 1.25rem; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
+.report-stat-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 0.35rem; }
+.report-stat-val { font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; font-weight: 800; }
+.report-stat-change { font-size: 0.7rem; font-weight: 600; margin-top: 0.25rem; }
+.report-actions { display: flex; gap: 0.5rem; }
+.report-btn { background: var(--ng-green); color: #fff; border: none; border-radius: var(--radius-sm); padding: 0.5rem 1.25rem; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; }
+.report-btn:hover { opacity: 0.85; }
+.report-btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+@media (max-width: 768px) { .report-grid { grid-template-columns: 1fr 1fr; } }
+@media print { .report-controls, .report-actions { display: none !important; } }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(0,148,1,0.1);color:var(--ng-green);"><i class="bi bi-file-earmark-bar-graph"></i></div>
+            <div>
+                <div class="section-title">Annual Economic Snapshot</div>
+                <div class="section-sub">One-page summary for any year — perfect for sharing or printing</div>
+            </div>
+        </div>
+
+        <div class="report-controls">
+            <label style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);">Select Year:</label>
+            <select onchange="window.location='/report?year='+this.value">
+                {% for y in all_years|reverse %}
+                <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+            <div class="report-actions">
+                <button class="report-btn" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+                <button class="report-btn report-btn-outline" onclick="downloadReport()"><i class="bi bi-download"></i> Download Image</button>
+            </div>
+        </div>
+
+        <div class="report-card" id="reportContent">
+            <div class="report-header">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+                    <div>
+                        <div class="report-title">Nigeria Economic Report</div>
+                        <div class="report-year">{{ year }}</div>
+                        {% if president %}
+                        <div class="report-pres"><i class="bi bi-person"></i> President: {{ president.name }} ({{ president.party }})</div>
+                        {% endif %}
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.65rem;color:var(--text-tertiary);text-transform:uppercase;">Nigeria Debt Clock</div>
+                        <div style="font-size:0.72rem;color:var(--text-secondary);">Designed by Place of Ideation</div>
+                    </div>
+                </div>
+            </div>
+            <div class="report-grid">
+                <div class="report-stat">
+                    <div class="report-stat-label">Total Public Debt</div>
+                    <div class="report-stat-val" style="color:var(--red);">${{ '%.1f'|format(selected.total_debt_usd) }}B</div>
+                    {% if prev %}<div class="report-stat-change" style="color:{% if selected.total_debt_usd > prev.total_debt_usd %}var(--red){% else %}var(--green){% endif %};">{{ '+' if selected.total_debt_usd > prev.total_debt_usd }}${{ '%.1f'|format(selected.total_debt_usd - prev.total_debt_usd) }}B from {{ year - 1 }}</div>{% endif %}
+                </div>
+                <div class="report-stat">
+                    <div class="report-stat-label">External Debt</div>
+                    <div class="report-stat-val">${{ '%.1f'|format(selected.external_debt_usd) }}B</div>
+                </div>
+                <div class="report-stat">
+                    <div class="report-stat-label">Domestic Debt</div>
+                    <div class="report-stat-val">N{{ '%.1f'|format(selected.domestic_debt_ngn_tn) }}T</div>
+                </div>
+                <div class="report-stat">
+                    <div class="report-stat-label">External Reserves</div>
+                    <div class="report-stat-val" style="color:var(--green);">${{ '%.1f'|format(selected.external_reserves_usd) }}B</div>
+                </div>
+                <div class="report-stat">
+                    <div class="report-stat-label">FX Rate (Official)</div>
+                    <div class="report-stat-val" style="color:var(--gold);">N{{ '%.0f'|format(selected.exchange_rate_official) }}/$</div>
+                </div>
+                <div class="report-stat">
+                    <div class="report-stat-label">FX Rate (Parallel)</div>
+                    <div class="report-stat-val">N{{ '%.0f'|format(selected.exchange_rate_parallel or 0) }}/$</div>
+                </div>
+                <div class="report-stat">
+                    <div class="report-stat-label">Petrol Price</div>
+                    <div class="report-stat-val" style="color:var(--orange);">N{{ '%.0f'|format(selected.petrol_price) }}/L</div>
+                </div>
+                <div class="report-stat">
+                    <div class="report-stat-label">GDP</div>
+                    <div class="report-stat-val">${{ '%.0f'|format(selected.gdp_usd) }}B</div>
+                </div>
+                <div class="report-stat">
+                    <div class="report-stat-label">GDP Growth</div>
+                    <div class="report-stat-val" style="color:{% if selected.gdp_growth > 0 %}var(--green){% else %}var(--red){% endif %};">{{ '%.1f'|format(selected.gdp_growth) }}%</div>
+                </div>
+                <div class="report-stat">
+                    <div class="report-stat-label">Debt-to-GDP</div>
+                    <div class="report-stat-val">{{ '%.1f'|format(selected.debt_to_gdp) }}%</div>
+                </div>
+                <div class="report-stat">
+                    <div class="report-stat-label">Inflation Rate</div>
+                    <div class="report-stat-val" style="color:{% if selected.inflation_rate and selected.inflation_rate > 15 %}var(--red){% elif selected.inflation_rate and selected.inflation_rate > 10 %}var(--gold){% else %}var(--green){% endif %};">{{ '%.1f'|format(selected.inflation_rate or 0) }}%</div>
+                </div>
+                <div class="report-stat">
+                    <div class="report-stat-label">Population</div>
+                    <div class="report-stat-val">{{ '%.0f'|format(selected.population) }}M</div>
+                </div>
+                {% if selected.federal_revenue_ngn_tn %}
+                <div class="report-stat">
+                    <div class="report-stat-label">Federal Revenue</div>
+                    <div class="report-stat-val">N{{ '%.1f'|format(selected.federal_revenue_ngn_tn) }}T</div>
+                </div>
+                {% endif %}
+                {% if selected.debt_service_ngn_tn %}
+                <div class="report-stat">
+                    <div class="report-stat-label">Debt Service</div>
+                    <div class="report-stat-val" style="color:var(--red);">N{{ '%.1f'|format(selected.debt_service_ngn_tn) }}T</div>
+                </div>
+                {% endif %}
+                {% if selected.oil_price_usd %}
+                <div class="report-stat">
+                    <div class="report-stat-label">Oil Price (Brent)</div>
+                    <div class="report-stat-val">${{ '%.0f'|format(selected.oil_price_usd) }}/bbl</div>
+                </div>
+                {% endif %}
+                {% if selected.minimum_wage %}
+                <div class="report-stat">
+                    <div class="report-stat-label">Minimum Wage</div>
+                    <div class="report-stat-val">N{{ '{:,.0f}'.format(selected.minimum_wage) }}/mo</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function downloadReport() {
+    // Use html2canvas-style approach with native canvas
+    const el = document.getElementById('reportContent');
+    const c = document.createElement('canvas');
+    c.width = 800; c.height = 600;
+    const ctx = c.getContext('2d');
+
+    // Draw background
+    ctx.fillStyle = '#0a0a0f'; ctx.fillRect(0,0,800,600);
+    ctx.fillStyle = '#009401'; ctx.fillRect(0,0,800,4);
+
+    // Title
+    ctx.fillStyle = '#009401'; ctx.font = 'bold 20px Inter,sans-serif';
+    ctx.fillText('Nigeria Economic Report — {{ year }}', 30, 40);
+
+    {% if president %}
+    ctx.fillStyle = '#888'; ctx.font = '13px Inter,sans-serif';
+    ctx.fillText('President: {{ president.name }} ({{ president.party }})', 30, 62);
+    {% endif %}
+
+    // Stats
+    const stats = [
+        ['Total Debt', '${{ "%.1f"|format(selected.total_debt_usd) }}B'],
+        ['External Debt', '${{ "%.1f"|format(selected.external_debt_usd) }}B'],
+        ['Reserves', '${{ "%.1f"|format(selected.external_reserves_usd) }}B'],
+        ['FX Rate', 'N{{ "%.0f"|format(selected.exchange_rate_official) }}/$'],
+        ['Petrol', 'N{{ "%.0f"|format(selected.petrol_price) }}/L'],
+        ['GDP', '${{ "%.0f"|format(selected.gdp_usd) }}B'],
+        ['GDP Growth', '{{ "%.1f"|format(selected.gdp_growth) }}%'],
+        ['Debt/GDP', '{{ "%.1f"|format(selected.debt_to_gdp) }}%'],
+        ['Inflation', '{{ "%.1f"|format(selected.inflation_rate or 0) }}%'],
+        ['Population', '{{ "%.0f"|format(selected.population) }}M'],
+    ];
+
+    stats.forEach((s, i) => {
+        const col = i % 3;
+        const row = Math.floor(i / 3);
+        const x = 30 + col * 260;
+        const y = 100 + row * 90;
+        ctx.fillStyle = '#1a1a2e'; ctx.fillRect(x, y, 240, 75);
+        ctx.strokeStyle = '#333'; ctx.strokeRect(x, y, 240, 75);
+        ctx.fillStyle = '#666'; ctx.font = '11px Inter,sans-serif'; ctx.fillText(s[0], x + 12, y + 22);
+        ctx.fillStyle = '#f0f0f5'; ctx.font = 'bold 20px JetBrains Mono,monospace'; ctx.fillText(s[1], x + 12, y + 52);
+    });
+
+    ctx.fillStyle = '#333'; ctx.font = '10px Inter,sans-serif';
+    ctx.fillText('Nigeria Debt Clock — Designed by Place of Ideation', 30, 585);
+
+    const link = document.createElement('a');
+    link.download = 'nigeria-report-{{ year }}.png';
+    link.href = c.toDataURL();
+    link.click();
+}
+</script>
+{% endblock %}

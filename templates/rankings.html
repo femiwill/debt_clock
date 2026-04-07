@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Global Rankings — Nigeria Debt Clock{% endblock %}
+{% block description %}Where Nigeria ranks globally on debt, reserves, inflation, GDP, and more{% endblock %}
+
+{% block extra_styles %}
+.rank-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
+.rank-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; transition: all 0.3s; }
+.rank-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.rank-metric { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 0.5rem; }
+.rank-position { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.75rem; }
+.rank-num { font-family: 'JetBrains Mono', monospace; font-size: 2.5rem; font-weight: 900; }
+.rank-of { font-size: 0.78rem; color: var(--text-secondary); }
+.rank-bar-wrap { background: var(--bg); border-radius: 50px; height: 8px; margin-bottom: 0.75rem; overflow: hidden; }
+.rank-bar-fill { height: 100%; border-radius: 50px; transition: width 0.5s; }
+.rank-val { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 800; color: var(--ng-green); margin-bottom: 0.5rem; }
+.rank-compare { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-tertiary); margin-bottom: 0.5rem; padding: 0.35rem 0; border-bottom: 1px solid var(--border); }
+.rank-context { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5; margin-top: 0.5rem; font-style: italic; }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(0,148,1,0.1);color:var(--ng-green);"><i class="bi bi-globe2"></i></div>
+            <div>
+                <div class="section-title">Nigeria's Global Rankings</div>
+                <div class="section-sub">Where Nigeria stands among 195 countries on key economic metrics</div>
+            </div>
+        </div>
+
+        <div class="rank-cards">
+            {% for r in rankings %}
+            {% set pct = ((r.of - r.rank) / r.of * 100)|round|int %}
+            {% set bar_color = 'var(--green)' if pct > 70 else 'var(--gold)' if pct > 40 else 'var(--red)' %}
+            {% set num_color = 'var(--green)' if r.rank > 100 else 'var(--gold)' if r.rank > 30 else 'var(--red)' %}
+            <div class="rank-card">
+                <div class="rank-metric">{{ r.metric }}</div>
+                <div class="rank-position">
+                    <span class="rank-num" style="color:{{ num_color }};">#{{ r.rank }}</span>
+                    <span class="rank-of">of {{ r.of }} countries</span>
+                </div>
+                <div class="rank-bar-wrap">
+                    <div class="rank-bar-fill" style="width:{{ pct }}%;background:{{ bar_color }};"></div>
+                </div>
+                <div class="rank-val">{{ r.value }}</div>
+                <div class="rank-compare">
+                    <span><i class="bi bi-trophy" style="color:var(--gold);"></i> #1: {{ r.top }}</span>
+                    <span>#{{ r.of }}: {{ r.bottom }}</span>
+                </div>
+                <div class="rank-context"><i class="bi bi-info-circle"></i> {{ r.context }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

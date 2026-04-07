@@ -56,6 +56,27 @@
 {% endblock %}
 
 {% block content %}
+<!-- MILESTONE ALERT -->
+{% if days_to_milestone %}
+<div style="background:linear-gradient(90deg,rgba(255,82,82,0.1),rgba(255,82,82,0.05));border-bottom:1px solid rgba(255,82,82,0.15);padding:0.6rem 0;text-align:center;">
+    <div class="container" style="font-size:0.78rem;">
+        <i class="bi bi-exclamation-triangle" style="color:var(--red);"></i>
+        <strong style="color:var(--red);">$100B Milestone:</strong>
+        <span style="color:var(--text-secondary);">At the current borrowing rate, Nigeria's debt will cross <strong>$100 billion</strong> in approximately</span>
+        <span class="mono" style="color:var(--red);font-weight:800;" id="milestoneCount">{{ days_to_milestone }}</span>
+        <span style="color:var(--text-secondary);">days</span>
+    </div>
+</div>
+{% endif %}
+
+<!-- ROTATING FACTS -->
+<div style="background:var(--bg-card);border-bottom:1px solid var(--border);padding:0.55rem 0;overflow:hidden;">
+    <div class="container" style="display:flex;align-items:center;gap:0.75rem;">
+        <span style="font-size:0.65rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;"><i class="bi bi-lightbulb"></i> Did You Know</span>
+        <span style="font-size:0.78rem;color:var(--text-secondary);" id="factText">{{ debt_facts[0] }}</span>
+    </div>
+</div>
+
 <!-- TIMELINE SLIDER -->
 <section class="ticker-section">
     <div class="container">
@@ -132,6 +153,34 @@
                 <div class="tc-sub" id="debtAccum">Accumulating in real-time</div>
             </div>
             {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- TOOLS ROW: Currency Converter + Share Card -->
+<section style="padding:0 0 1rem;">
+    <div class="container" style="display:flex;gap:1rem;flex-wrap:wrap;">
+        <!-- Currency Converter -->
+        <div style="flex:1;min-width:280px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;">
+            <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-tertiary);margin-bottom:0.75rem;"><i class="bi bi-currency-exchange"></i> Currency Converter</div>
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                <input type="number" id="convAmount" value="{{ '%.1f'|format(latest.total_debt_usd) }}" step="0.1" style="width:120px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.4rem 0.6rem;color:var(--text-primary);font-size:0.85rem;font-family:'JetBrains Mono',monospace;outline:none;" oninput="convert()">
+                <select id="convDir" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.4rem 0.6rem;color:var(--text-primary);font-size:0.78rem;outline:none;" onchange="convert()">
+                    <option value="usd_ngn">USD B → NGN T</option>
+                    <option value="ngn_usd">NGN T → USD B</option>
+                </select>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.9rem;font-weight:800;color:var(--ng-green);" id="convResult"></div>
+            </div>
+            <div style="font-size:0.65rem;color:var(--text-tertiary);margin-top:0.5rem;">
+                Official: N{{ '%.0f'|format(latest.exchange_rate_official) }}/$1 &middot; Parallel: N{{ '%.0f'|format(latest.exchange_rate_parallel) }}/$1
+            </div>
+        </div>
+        <!-- Share Card -->
+        <div style="flex:1;min-width:280px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;">
+            <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-tertiary);margin-bottom:0.75rem;"><i class="bi bi-share"></i> Share Your Debt Card</div>
+            <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:0.75rem;">Download a personalized card showing your share of Nigeria's debt.</div>
+            <button onclick="generateShareCard()" style="background:var(--ng-green);color:#fff;border:none;border-radius:var(--radius-sm);padding:0.5rem 1.25rem;font-size:0.78rem;font-weight:700;cursor:pointer;">Generate & Download</button>
+            <canvas id="shareCanvas" width="600" height="340" style="display:none;"></canvas>
         </div>
     </div>
 </section>
@@ -423,6 +472,89 @@ makeChart('litresChart', [ds('Litres/Wage',timeline.litres_per_wage,'#00e676',0,
 makeChart('gdpChart', [ds('GDP',timeline.gdp,'#448aff',0,1)], v=>'$'+v+'B');
 makeChart('debtGdpChart', [ds('Debt/GDP',timeline.debt_to_gdp,'#009401',0,1)], v=>v+'%');
 makeChart('nairaChart', [ds('Purchasing Power',timeline.naira_purchasing_power,'#ffd740',0,1)], v=>'\u20A6'+v);
+
+// Rotating facts
+(function(){
+    const facts = {{ debt_facts | tojson }};
+    const el = document.getElementById('factText');
+    let i = 0;
+    setInterval(()=>{ i = (i+1) % facts.length; el.style.opacity=0; setTimeout(()=>{el.textContent=facts[i];el.style.opacity=1;},400); }, 6000);
+    el.style.transition = 'opacity 0.4s';
+})();
+
+// Currency converter
+function convert(){
+    const amt = parseFloat(document.getElementById('convAmount').value) || 0;
+    const dir = document.getElementById('convDir').value;
+    const fxOff = {{ latest.exchange_rate_official }};
+    const fxPar = {{ latest.exchange_rate_parallel }};
+    let result;
+    if(dir === 'usd_ngn'){
+        const off = (amt * fxOff / 1000).toFixed(1);
+        const par = (amt * fxPar / 1000).toFixed(1);
+        result = 'N' + off + 'T (official) / N' + par + 'T (parallel)';
+    } else {
+        const off = (amt * 1000 / fxOff).toFixed(1);
+        const par = (amt * 1000 / fxPar).toFixed(1);
+        result = '$' + off + 'B (official) / $' + par + 'B (parallel)';
+    }
+    document.getElementById('convResult').textContent = result;
+}
+convert();
+
+// Share card generator
+function generateShareCard(){
+    const c = document.getElementById('shareCanvas');
+    const ctx = c.getContext('2d');
+    // Background
+    ctx.fillStyle = '#0a0a0f'; ctx.fillRect(0,0,600,340);
+    ctx.fillStyle = '#009401'; ctx.fillRect(0,0,600,4);
+    // Title
+    ctx.fillStyle = '#009401'; ctx.font = 'bold 18px Inter,sans-serif';
+    ctx.fillText('NIGERIA DEBT CLOCK', 30, 40);
+    ctx.fillStyle = '#666'; ctx.font = '12px Inter,sans-serif';
+    ctx.fillText('debtclock.ng', 30, 58);
+    // Main stat
+    ctx.fillStyle = '#ff5252'; ctx.font = 'bold 48px JetBrains Mono,monospace';
+    ctx.fillText('${{ "%.0f"|format(latest.total_debt_usd) }}B', 30, 120);
+    ctx.fillStyle = '#888'; ctx.font = '14px Inter,sans-serif';
+    ctx.fillText('Total Public Debt ({{ latest.year }})', 30, 145);
+    // Per citizen
+    ctx.fillStyle = '#ffd740'; ctx.font = 'bold 32px JetBrains Mono,monospace';
+    ctx.fillText('${{ "%.0f"|format(per_citizen_debt) }}', 30, 200);
+    ctx.fillStyle = '#888'; ctx.font = '14px Inter,sans-serif';
+    ctx.fillText('Your share as a Nigerian citizen', 30, 222);
+    // Stats row
+    ctx.fillStyle = '#333'; ctx.fillRect(30, 245, 540, 1);
+    const stats = [
+        ['Reserves', '${{ "%.1f"|format(latest.external_reserves_usd) }}B'],
+        ['FX Rate', 'N{{ "%.0f"|format(latest.exchange_rate_official) }}/$'],
+        ['Debt/GDP', '{{ "%.0f"|format(latest.debt_to_gdp) }}%'],
+        ['Inflation', '{{ "%.1f"|format(latest.inflation_rate) }}%']
+    ];
+    stats.forEach((s,i) => {
+        const x = 30 + i * 140;
+        ctx.fillStyle = '#666'; ctx.font = '11px Inter,sans-serif'; ctx.fillText(s[0], x, 275);
+        ctx.fillStyle = '#f0f0f5'; ctx.font = 'bold 16px JetBrains Mono,monospace'; ctx.fillText(s[1], x, 298);
+    });
+    ctx.fillStyle = '#333'; ctx.font = '10px Inter,sans-serif';
+    ctx.fillText('Designed by Place of Ideation', 30, 328);
+    // Download
+    const link = document.createElement('a');
+    link.download = 'nigeria-debt-card.png';
+    link.href = c.toDataURL();
+    link.click();
+}
+
+{% if days_to_milestone %}
+// Milestone countdown
+(function(){
+    let days = {{ days_to_milestone }};
+    const el = document.getElementById('milestoneCount');
+    // Countdown by fractional day per second
+    setInterval(()=>{ days -= 1/86400; el.textContent = Math.floor(days); }, 1000);
+})();
+{% endif %}
 
 // Debt per second live counter
 (function(){

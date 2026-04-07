@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Chart Builder — Nigeria Debt Clock{% endblock %}
+{% block description %}Build custom charts by overlaying any two economic metrics side by side{% endblock %}
+
+{% block extra_styles %}
+.cb-controls { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem; display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-end; }
+.cb-field label { display: block; font-size: 0.68rem; font-weight: 700; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem; }
+.cb-field select { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 1rem; color: var(--text-primary); font-size: 0.82rem; outline: none; min-width: 200px; }
+.cb-field select:focus { border-color: var(--ng-green); }
+.cb-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 0.25rem; vertical-align: middle; }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(68,138,255,0.1);color:var(--blue);"><i class="bi bi-sliders"></i></div>
+            <div>
+                <div class="section-title">Custom Chart Builder</div>
+                <div class="section-sub">Overlay any two economic metrics to discover correlations and patterns</div>
+            </div>
+        </div>
+
+        <div class="cb-controls">
+            <div class="cb-field">
+                <label><span class="cb-dot" style="background:#448aff;"></span> Left Axis (Blue)</label>
+                <select id="metric1" onchange="buildCustomChart()">
+                    <option value="total_debt">Total Debt (USD B)</option>
+                    <option value="external_debt">External Debt (USD B)</option>
+                    <option value="reserves">External Reserves (USD B)</option>
+                    <option value="fx_official">Exchange Rate (Official)</option>
+                    <option value="fx_parallel">Exchange Rate (Parallel)</option>
+                    <option value="petrol">Petrol Price (NGN/L)</option>
+                    <option value="gdp">GDP (USD B)</option>
+                    <option value="debt_to_gdp">Debt-to-GDP (%)</option>
+                    <option value="inflation" selected>Inflation Rate (%)</option>
+                    <option value="oil_price">Oil Price ($/bbl)</option>
+                    <option value="population">Population (M)</option>
+                    <option value="revenue">Federal Revenue (NGN T)</option>
+                    <option value="debt_service">Debt Service (NGN T)</option>
+                </select>
+            </div>
+            <div class="cb-field">
+                <label><span class="cb-dot" style="background:#ff5252;"></span> Right Axis (Red)</label>
+                <select id="metric2" onchange="buildCustomChart()">
+                    <option value="total_debt">Total Debt (USD B)</option>
+                    <option value="external_debt">External Debt (USD B)</option>
+                    <option value="reserves">External Reserves (USD B)</option>
+                    <option value="fx_official">Exchange Rate (Official)</option>
+                    <option value="fx_parallel">Exchange Rate (Parallel)</option>
+                    <option value="petrol">Petrol Price (NGN/L)</option>
+                    <option value="gdp">GDP (USD B)</option>
+                    <option value="debt_to_gdp">Debt-to-GDP (%)</option>
+                    <option value="inflation">Inflation Rate (%)</option>
+                    <option value="oil_price" selected>Oil Price ($/bbl)</option>
+                    <option value="population">Population (M)</option>
+                    <option value="revenue">Federal Revenue (NGN T)</option>
+                    <option value="debt_service">Debt Service (NGN T)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-head"><div>
+                <div class="section-title" style="font-size:0.88rem;" id="chartTitle"><i class="bi bi-sliders" style="color:var(--blue);"></i> Custom Comparison</div>
+                <div class="section-sub" id="chartSub">Select two metrics above to compare</div>
+            </div></div>
+            <div class="chart-body" style="height:450px;"><canvas id="customChart"></canvas></div>
+        </div>
+
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-top:1rem;">
+            <div style="font-size:0.75rem;font-weight:700;margin-bottom:0.5rem;"><i class="bi bi-lightbulb" style="color:var(--gold);"></i> Suggested Comparisons</div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+                <button onclick="setMetrics('inflation','oil_price')" style="background:var(--bg);border:1px solid var(--border);border-radius:50px;padding:0.3rem 0.75rem;font-size:0.7rem;color:var(--text-secondary);cursor:pointer;">Inflation vs Oil Price</button>
+                <button onclick="setMetrics('reserves','oil_price')" style="background:var(--bg);border:1px solid var(--border);border-radius:50px;padding:0.3rem 0.75rem;font-size:0.7rem;color:var(--text-secondary);cursor:pointer;">Reserves vs Oil Price</button>
+                <button onclick="setMetrics('total_debt','gdp')" style="background:var(--bg);border:1px solid var(--border);border-radius:50px;padding:0.3rem 0.75rem;font-size:0.7rem;color:var(--text-secondary);cursor:pointer;">Debt vs GDP</button>
+                <button onclick="setMetrics('fx_official','petrol')" style="background:var(--bg);border:1px solid var(--border);border-radius:50px;padding:0.3rem 0.75rem;font-size:0.7rem;color:var(--text-secondary);cursor:pointer;">Exchange Rate vs Petrol</button>
+                <button onclick="setMetrics('revenue','debt_service')" style="background:var(--bg);border:1px solid var(--border);border-radius:50px;padding:0.3rem 0.75rem;font-size:0.7rem;color:var(--text-secondary);cursor:pointer;">Revenue vs Debt Service</button>
+                <button onclick="setMetrics('total_debt','inflation')" style="background:var(--bg);border:1px solid var(--border);border-radius:50px;padding:0.3rem 0.75rem;font-size:0.7rem;color:var(--text-secondary);cursor:pointer;">Debt vs Inflation</button>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const tl = {{ timeline | tojson }};
+const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+const tc = () => isDark() ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
+const gc = () => isDark() ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+
+const labels = {
+    total_debt: 'Total Debt (USD B)', external_debt: 'External Debt (USD B)',
+    reserves: 'Reserves (USD B)', fx_official: 'FX Official (NGN/$)',
+    fx_parallel: 'FX Parallel (NGN/$)', petrol: 'Petrol (NGN/L)',
+    gdp: 'GDP (USD B)', debt_to_gdp: 'Debt/GDP (%)',
+    inflation: 'Inflation (%)', oil_price: 'Oil Price ($/bbl)',
+    population: 'Population (M)', revenue: 'Revenue (NGN T)',
+    debt_service: 'Debt Service (NGN T)'
+};
+
+let chart;
+
+function buildCustomChart() {
+    const m1 = document.getElementById('metric1').value;
+    const m2 = document.getElementById('metric2').value;
+    const l1 = labels[m1], l2 = labels[m2];
+    document.getElementById('chartTitle').innerHTML = '<i class="bi bi-sliders" style="color:var(--blue);"></i> ' + l1 + ' vs ' + l2;
+    document.getElementById('chartSub').textContent = 'Blue = ' + l1 + ' (left axis) · Red = ' + l2 + ' (right axis)';
+
+    if (chart) chart.destroy();
+    chart = new Chart(document.getElementById('customChart'), {
+        type: 'line',
+        data: {
+            labels: tl.years,
+            datasets: [
+                { label: l1, data: tl[m1], borderColor: '#448aff', backgroundColor: '#448aff18', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#448aff', yAxisID: 'y' },
+                { label: l2, data: tl[m2], borderColor: '#ff5252', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#ff5252', yAxisID: 'y1' },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: true, labels: { color: tc(), font: { size: 11 }, boxWidth: 12 } } },
+            scales: {
+                x: { grid: { color: gc() }, ticks: { color: tc() } },
+                y: { position: 'left', title: { display: true, text: l1, color: '#448aff' }, grid: { color: gc() }, ticks: { color: '#448aff' } },
+                y1: { position: 'right', title: { display: true, text: l2, color: '#ff5252' }, grid: { drawOnChartArea: false }, ticks: { color: '#ff5252' } },
+            }
+        }
+    });
+}
+
+function setMetrics(m1, m2) {
+    document.getElementById('metric1').value = m1;
+    document.getElementById('metric2').value = m2;
+    buildCustomChart();
+}
+
+buildCustomChart();
+</script>
+{% endblock %}

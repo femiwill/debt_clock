@@ -196,6 +196,31 @@
             </table>
         </div>
 
+        <!-- Debt Purpose Breakdown -->
+        <div style="margin-top:2rem;">
+            <div class="section-head">
+                <div class="section-icon" style="background:rgba(179,136,255,0.1);color:var(--purple);"><i class="bi bi-diagram-3"></i></div>
+                <div>
+                    <div class="section-title">What Was the Debt Used For?</div>
+                    <div class="section-sub">Approximate allocation of borrowing by purpose (estimates based on budget data)</div>
+                </div>
+            </div>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <div class="chart-head"><div>
+                        <div class="section-title" style="font-size:0.88rem;"><i class="bi bi-pie-chart-fill" style="color:var(--purple);"></i> Borrowing Purpose by President</div>
+                    </div></div>
+                    <div class="chart-body" style="height:350px;"><canvas id="purposeChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-head"><div>
+                        <div class="section-title" style="font-size:0.88rem;"><i class="bi bi-bar-chart-stacked" style="color:var(--blue);"></i> Purpose Breakdown (Stacked)</div>
+                    </div></div>
+                    <div class="chart-body" style="height:350px;"><canvas id="purposeStackChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Year-by-Year Breakdown per President -->
         <div style="margin-top:2rem;">
             <div class="section-head">
@@ -370,5 +395,52 @@ barChart('debtGrowthChart', borrowing.map(b => b.growth_pct), 'Growth', v => v +
         }
     });
 })();
+
+// 7. Debt Purpose Charts
+const purpose = {{ debt_purpose | tojson }};
+const purposeNames = Object.keys(purpose);
+const categories = Object.keys(Object.values(purpose)[0]);
+const purposeColors = ['#448aff', '#ff9100', '#ff5252', '#00e676'];
+
+// Stacked bar
+new Chart(document.getElementById('purposeStackChart'), {
+    type: 'bar',
+    data: {
+        labels: purposeNames,
+        datasets: categories.map((cat, i) => ({
+            label: cat,
+            data: purposeNames.map(n => purpose[n][cat]),
+            backgroundColor: purposeColors[i] + '80',
+            borderColor: purposeColors[i],
+            borderWidth: 1.5, borderRadius: 2,
+        }))
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, labels: { color: tc(), font: { size: 10 }, boxWidth: 10 } } },
+        scales: {
+            x: { stacked: true, ticks: { color: tc(), font: { size: 10 } }, grid: { color: gc() } },
+            y: { stacked: true, max: 100, ticks: { color: tc(), callback: v => v + '%' }, grid: { color: gc() } }
+        }
+    }
+});
+
+// Doughnut for latest president
+const latestPres = purposeNames[purposeNames.length - 1];
+new Chart(document.getElementById('purposeChart'), {
+    type: 'doughnut',
+    data: {
+        labels: categories,
+        datasets: [{ data: categories.map(c => purpose[latestPres][c]),
+            backgroundColor: purposeColors, borderColor: '#12121a', borderWidth: 2 }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+            legend: { display: true, position: 'bottom', labels: { color: tc(), font: { size: 11 }, boxWidth: 12, padding: 15 } },
+            title: { display: true, text: latestPres + ' — Borrowing Purpose', color: tc(), font: { size: 13, weight: '700' } }
+        }
+    }
+});
 </script>
 {% endblock %}

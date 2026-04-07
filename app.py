@@ -290,6 +290,79 @@ GLOSSARY = {
     'Fiscal Deficit': 'The gap between government revenue and spending. When spending exceeds revenue, the deficit is financed by borrowing.',
 }
 
+DEBT_FACTS = [
+    "Nigeria's debt has grown 170% in the last 10 years.",
+    "Each Nigerian carries approximately $430 in public debt.",
+    "64% of federal revenue goes to servicing debt — not building roads or schools.",
+    "Nigeria's debt doubles roughly every 5 years at current rates.",
+    "The Ways & Means securitization added N22.7T to debt overnight in 2023.",
+    "Nigeria pays more in debt service than it spends on health and education combined.",
+    "At $99B, Nigeria's debt is larger than the GDP of 140+ countries.",
+    "In 1999, Nigeria's total debt was $37B — it has nearly tripled in 26 years.",
+    "Nigeria's debt-to-GDP ratio (35%) looks low, but debt-to-revenue is the real crisis.",
+    "The naira has lost 94% of its value against the dollar since 1999.",
+    "A minimum wage worker could buy 150 litres of petrol in 1999 — only 67 today.",
+    "China holds $3.8B of Nigeria's external debt through Exim Bank loans.",
+    "Nigeria's reserves peaked at $53B in 2008 — still haven't recovered 17 years later.",
+    "Obasanjo is the only president who reduced Nigeria's total debt stock.",
+    "Buhari added more debt ($50B) than all other presidents combined.",
+]
+
+GLOBAL_RANKINGS = [
+    {'metric': 'Total Debt Stock', 'rank': 50, 'of': 195, 'value': '$99B',
+     'top': 'USA ($34T)', 'bottom': 'Tuvalu ($24M)',
+     'context': 'Mid-range globally but high for a lower-middle-income country'},
+    {'metric': 'Debt-to-GDP Ratio', 'rank': 120, 'of': 195, 'value': '35%',
+     'top': 'Japan (264%)', 'bottom': 'Brunei (2%)',
+     'context': 'Low ratio — but misleading when revenue is the real constraint'},
+    {'metric': 'Debt Service / Revenue', 'rank': 8, 'of': 195, 'value': '64%',
+     'top': 'Sri Lanka (95%)', 'bottom': 'Norway (2%)',
+     'context': 'Among the worst globally — most revenue services debt, not citizens'},
+    {'metric': 'External Reserves', 'rank': 38, 'of': 195, 'value': '$45.7B',
+     'top': 'China ($3.4T)', 'bottom': 'Sao Tome ($0.04B)',
+     'context': 'Recovering but still below the 2008 peak of $53B'},
+    {'metric': 'Inflation Rate', 'rank': 25, 'of': 195, 'value': '15.2%',
+     'top': 'Venezuela (400%+)', 'bottom': 'Switzerland (0.4%)',
+     'context': 'Falling from the 2024 peak of 31.4% but still elevated'},
+    {'metric': 'Debt Per Capita', 'rank': 140, 'of': 195, 'value': '$430',
+     'top': 'Japan ($75K)', 'bottom': 'Timor-Leste ($7)',
+     'context': 'Low per person, but 230M people amplifies the total'},
+    {'metric': 'GDP Size', 'rank': 40, 'of': 195, 'value': '$285B',
+     'top': 'USA ($28T)', 'bottom': 'Tuvalu ($0.06B)',
+     'context': "Africa's largest economy — dropped from 26th after naira devaluation"},
+    {'metric': 'Population', 'rank': 6, 'of': 195, 'value': '230M',
+     'top': 'India (1.44B)', 'bottom': 'Vatican City (800)',
+     'context': "Africa's most populous — projected world #3 by 2050"},
+]
+
+DEBT_PURPOSE = {
+    'Obasanjo': {'Capital Projects': 30, 'Recurrent Spending': 45, 'Debt Refinancing': 15, 'Social Services': 10},
+    "Yar'Adua": {'Capital Projects': 35, 'Recurrent Spending': 40, 'Debt Refinancing': 10, 'Social Services': 15},
+    'Jonathan': {'Capital Projects': 25, 'Recurrent Spending': 45, 'Debt Refinancing': 20, 'Social Services': 10},
+    'Buhari': {'Capital Projects': 20, 'Recurrent Spending': 35, 'Debt Refinancing': 35, 'Social Services': 10},
+    'Tinubu': {'Capital Projects': 15, 'Recurrent Spending': 40, 'Debt Refinancing': 35, 'Social Services': 10},
+}
+
+CALCULATOR_ITEMS = [
+    {'name': 'Teacher Salaries (1 year)', 'cost_ngn': 1200000, 'icon': 'person-workspace'},
+    {'name': 'Boreholes (Clean Water)', 'cost_ngn': 3000000, 'icon': 'droplet-half'},
+    {'name': 'Primary Schools', 'cost_ngn': 50000000, 'icon': 'building'},
+    {'name': 'Primary Health Centres', 'cost_ngn': 100000000, 'icon': 'hospital'},
+    {'name': 'Affordable Homes', 'cost_ngn': 15000000, 'icon': 'house-door'},
+    {'name': 'Solar Street Lights', 'cost_ngn': 500000, 'icon': 'lightbulb'},
+    {'name': 'University Scholarships (4yr)', 'cost_ngn': 4000000, 'icon': 'mortarboard'},
+    {'name': 'Ambulances', 'cost_ngn': 25000000, 'icon': 'truck'},
+]
+
+STATE_ZONES = {
+    'North West': ['Sokoto', 'Zamfara', 'Katsina', 'Kaduna', 'Kano', 'Jigawa', 'Kebbi'],
+    'North East': ['Borno', 'Yobe', 'Bauchi', 'Gombe', 'Adamawa', 'Taraba'],
+    'North Central': ['Niger', 'Kwara', 'Kogi', 'Benue', 'Plateau', 'Nasarawa', 'FCT'],
+    'South West': ['Lagos', 'Ogun', 'Oyo', 'Osun', 'Ondo', 'Ekiti'],
+    'South East': ['Anambra', 'Enugu', 'Ebonyi', 'Abia', 'Imo'],
+    'South South': ['Edo', 'Delta', 'Bayelsa', 'Rivers', 'Cross River', 'Akwa Ibom'],
+}
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SEED DATA
@@ -539,6 +612,13 @@ def index():
         annual_increase_usd = (last_two[1].total_debt_usd - last_two[0].total_debt_usd) * 1e9
         debt_per_second = annual_increase_usd / (365.25 * 24 * 3600)
 
+    # Milestone: days to $100B
+    milestone_target = 100.0
+    days_to_milestone = None
+    if latest and latest.total_debt_usd < milestone_target and debt_per_second > 0:
+        remaining_usd = (milestone_target - latest.total_debt_usd) * 1e9
+        days_to_milestone = int(remaining_usd / (debt_per_second * 86400))
+
     return render_template('index.html',
                            presidents=presidents,
                            pres_summaries=pres_summaries,
@@ -546,6 +626,8 @@ def index():
                            per_citizen_debt=per_citizen_debt,
                            debt_service_pct=debt_service_pct,
                            debt_per_second=debt_per_second,
+                           days_to_milestone=days_to_milestone,
+                           debt_facts=DEBT_FACTS,
                            timeline=timeline,
                            ticker_by_year=ticker_by_year,
                            eras=eras,
@@ -709,7 +791,8 @@ def borrowing():
                            borrowing=borrowing_list,
                            borrowing_ranked=borrowing_ranked,
                            borrowing_json=borrowing_list,
-                           latest_year=latest_year)
+                           latest_year=latest_year,
+                           debt_purpose=DEBT_PURPOSE)
 
 
 @app.route('/compare')
@@ -763,7 +846,14 @@ def breakdown():
 def states():
     sorted_states = sorted(STATE_DEBTS, key=lambda s: s['total'], reverse=True)
     top10 = [(s['name'], s['domestic'], s['external']) for s in sorted_states[:10]]
-    return render_template('states.html', states=sorted_states, top10=top10)
+    # Build zone data for map
+    state_lookup = {s['name']: s for s in sorted_states}
+    zones_data = {}
+    for zone, names in STATE_ZONES.items():
+        zones_data[zone] = [state_lookup[n] for n in names if n in state_lookup]
+    max_total = sorted_states[0]['total'] if sorted_states else 1
+    return render_template('states.html', states=sorted_states, top10=top10,
+                           zones_data=zones_data, max_total=max_total)
 
 
 @app.route('/quiz')
@@ -937,6 +1027,63 @@ def admin_logout():
     return resp
 
 
+@app.route('/calculator')
+def calculator():
+    sorted_states = sorted(STATE_DEBTS, key=lambda s: s['total'], reverse=True)
+    return render_template('calculator.html', states=sorted_states,
+                           items=CALCULATOR_ITEMS)
+
+
+@app.route('/chart-builder')
+def chart_builder():
+    all_data = EconomicData.query.order_by(EconomicData.year).all()
+    tl = {
+        'years': [d.year for d in all_data],
+        'total_debt': [d.total_debt_usd for d in all_data],
+        'external_debt': [d.external_debt_usd for d in all_data],
+        'reserves': [d.external_reserves_usd for d in all_data],
+        'fx_official': [d.exchange_rate_official for d in all_data],
+        'fx_parallel': [d.exchange_rate_parallel for d in all_data],
+        'petrol': [d.petrol_price for d in all_data],
+        'gdp': [d.gdp_usd for d in all_data],
+        'debt_to_gdp': [d.debt_to_gdp for d in all_data],
+        'inflation': [d.inflation_rate for d in all_data],
+        'oil_price': [d.oil_price_usd for d in all_data],
+        'population': [d.population for d in all_data],
+        'revenue': [d.federal_revenue_ngn_tn for d in all_data],
+        'debt_service': [d.debt_service_ngn_tn for d in all_data],
+    }
+    return render_template('chart_builder.html', timeline=tl)
+
+
+@app.route('/rankings')
+def rankings():
+    return render_template('rankings.html', rankings=GLOBAL_RANKINGS)
+
+
+@app.route('/report')
+def report():
+    year = request.args.get('year', None, type=int)
+    all_data = EconomicData.query.order_by(EconomicData.year).all()
+    years = [d.year for d in all_data]
+    selected = None
+    prev = None
+    if year and year in years:
+        idx = years.index(year)
+        selected = all_data[idx]
+        prev = all_data[idx - 1] if idx > 0 else None
+    else:
+        selected = all_data[-1]
+        prev = all_data[-2] if len(all_data) >= 2 else None
+        year = selected.year
+    pres = President.query.filter(
+        President.start_year <= year,
+        db.or_(President.end_year >= year, President.end_year.is_(None))
+    ).first()
+    return render_template('report.html', selected=selected, prev=prev,
+                           year=year, president=pres, all_years=years)
+
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
@@ -946,7 +1093,8 @@ def page_not_found(e):
 def sitemap_xml():
     base = request.url_root.replace('http://', 'https://').rstrip('/')
     pages = ['/', '/borrowing', '/compare', '/breakdown', '/states', '/africa',
-             '/quiz', '/projection', '/timeline', '/glossary']
+             '/quiz', '/projection', '/timeline', '/glossary', '/calculator',
+             '/chart-builder', '/rankings', '/report']
     xml = ['<?xml version="1.0" encoding="UTF-8"?>',
            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for page in pages:

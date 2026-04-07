@@ -32,6 +32,28 @@
             <input type="text" id="stateSearch" placeholder="Search states..." oninput="filterStates()">
         </div>
 
+        <!-- State Debt Map by Zone -->
+        <div style="margin-bottom:1.5rem;">
+            <div style="font-size:0.85rem;font-weight:700;margin-bottom:0.75rem;"><i class="bi bi-map" style="color:var(--ng-green);"></i> Debt Heat Map by Geopolitical Zone</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;">
+                {% for zone, zone_states in zones_data.items() %}
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;overflow:hidden;">
+                    <div style="font-size:0.72rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.75rem;">{{ zone }}</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+                        {% for s in zone_states %}
+                        {% set intensity = (s.total / max_total * 100)|round|int %}
+                        {% set hue = 120 - (intensity * 1.2)|round|int %}
+                        <div style="background:hsl({{ hue }},70%,{% if intensity > 60 %}30{% elif intensity > 30 %}35{% else %}25{% endif %}%);border-radius:var(--radius-sm);padding:0.4rem 0.6rem;flex:1;min-width:80px;text-align:center;border:1px solid rgba(255,255,255,0.05);cursor:default;transition:transform 0.2s;" title="{{ s.name }}: N{{ '{:,.0f}'.format(s.total) }}B total debt" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                            <div style="font-size:0.68rem;font-weight:700;color:#fff;">{{ s.name }}</div>
+                            <div style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;font-weight:800;color:hsl({{ hue }},80%,70%);">N{{ '{:,.0f}'.format(s.total) }}B</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
         <!-- Top 10 Chart -->
         <div class="chart-card" style="margin-bottom:1.5rem;">
             <div class="chart-head"><div><div class="section-title" style="font-size:0.88rem;"><i class="bi bi-bar-chart" style="color:var(--red);"></i> Top 10 Most Indebted States</div></div></div>
