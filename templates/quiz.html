@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Debt Literacy Quiz — Nigeria Debt Clock{% endblock %}
+
+{% block extra_styles %}
+.quiz-container { max-width: 640px; margin: 0 auto; }
+.quiz-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; }
+.quiz-progress { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
+.quiz-progress-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.quiz-progress-fill { height: 100%; background: var(--ng-green); transition: width 0.3s; border-radius: 3px; }
+.quiz-progress-text { font-size: 0.72rem; color: var(--text-tertiary); font-weight: 600; white-space: nowrap; }
+.quiz-question { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.5rem; line-height: 1.5; }
+.quiz-options { display: flex; flex-direction: column; gap: 0.75rem; }
+.quiz-opt { background: var(--bg); border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 0.85rem 1.25rem; cursor: pointer; font-size: 0.88rem; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 0.75rem; }
+.quiz-opt:hover { border-color: var(--ng-green); transform: translateX(4px); }
+.quiz-opt.correct { border-color: var(--green); background: rgba(0,230,118,0.08); color: var(--green); }
+.quiz-opt.wrong { border-color: var(--red); background: rgba(255,82,82,0.08); color: var(--red); }
+.quiz-opt.disabled { pointer-events: none; opacity: 0.6; }
+.quiz-opt-letter { width: 28px; height: 28px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 800; flex-shrink: 0; }
+.quiz-explanation { margin-top: 1.25rem; padding: 1rem; background: rgba(0,148,1,0.06); border-left: 3px solid var(--ng-green); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; display: none; }
+.quiz-next { margin-top: 1.25rem; background: var(--ng-green); color: #fff; border: none; border-radius: var(--radius-sm); padding: 0.65rem 2rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: none; }
+.quiz-next:hover { opacity: 0.85; }
+
+/* Results */
+.quiz-result { text-align: center; }
+.quiz-score { font-family: 'JetBrains Mono', monospace; font-size: 3.5rem; font-weight: 800; }
+.quiz-score-label { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem; }
+.quiz-grade { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+.quiz-share { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--ng-green); color: #fff; border: none; border-radius: var(--radius-sm); padding: 0.6rem 1.5rem; font-size: 0.82rem; font-weight: 700; cursor: pointer; margin-top: 1rem; }
+.quiz-share:hover { opacity: 0.85; }
+.quiz-restart { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.6rem 1.5rem; font-size: 0.82rem; font-weight: 700; cursor: pointer; color: var(--text-secondary); margin-top: 0.75rem; margin-left: 0.5rem; }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(255,215,64,0.1);color:var(--gold);"><i class="bi bi-question-circle-fill"></i></div>
+            <div>
+                <div class="section-title">Nigeria Debt Literacy Quiz</div>
+                <div class="section-sub">Test your knowledge of Nigeria's public finances</div>
+            </div>
+        </div>
+
+        <div class="quiz-container">
+            <div class="quiz-card" id="quizCard">
+                <div class="quiz-progress">
+                    <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="progFill" style="width:0%"></div></div>
+                    <span class="quiz-progress-text" id="progText">1 / {{ questions|length }}</span>
+                </div>
+                <div id="questionArea">
+                    <div class="quiz-question" id="qText"></div>
+                    <div class="quiz-options" id="qOptions"></div>
+                    <div class="quiz-explanation" id="qExpl"></div>
+                    <button class="quiz-next" id="nextBtn" onclick="nextQuestion()">Next Question <i class="bi bi-arrow-right"></i></button>
+                </div>
+                <div id="resultArea" style="display:none;" class="quiz-result">
+                    <div class="quiz-score" id="scoreText"></div>
+                    <div class="quiz-score-label" id="scoreLabel"></div>
+                    <div class="quiz-grade" id="gradeText"></div>
+                    <div>
+                        <button class="quiz-share" onclick="shareResult()"><i class="bi bi-share"></i> Share Result</button>
+                        <button class="quiz-restart" onclick="restartQuiz()"><i class="bi bi-arrow-counterclockwise"></i> Try Again</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const questions = {{ questions | tojson }};
+let current = 0, score = 0, answered = false;
+
+function renderQuestion() {
+    const q = questions[current];
+    document.getElementById('progFill').style.width = ((current) / questions.length * 100) + '%';
+    document.getElementById('progText').textContent = (current + 1) + ' / ' + questions.length;
+    document.getElementById('qText').textContent = q.question;
+    document.getElementById('qExpl').style.display = 'none';
+    document.getElementById('nextBtn').style.display = 'none';
+    answered = false;
+
+    const opts = document.getElementById('qOptions');
+    opts.innerHTML = '';
+    const letters = ['A', 'B', 'C', 'D'];
+    q.options.forEach((opt, i) => {
+        const div = document.createElement('div');
+        div.className = 'quiz-opt';
+        div.innerHTML = '<span class="quiz-opt-letter">' + letters[i] + '</span>' + opt;
+        div.onclick = () => selectAnswer(i);
+        opts.appendChild(div);
+    });
+}
+
+function selectAnswer(idx) {
+    if (answered) return;
+    answered = true;
+    const q = questions[current];
+    const opts = document.querySelectorAll('.quiz-opt');
+    opts.forEach((o, i) => {
+        o.classList.add('disabled');
+        if (i === q.correct) o.classList.add('correct');
+        if (i === idx && idx !== q.correct) o.classList.add('wrong');
+    });
+    if (idx === q.correct) score++;
+    document.getElementById('qExpl').textContent = q.explanation;
+    document.getElementById('qExpl').style.display = 'block';
+    document.getElementById('nextBtn').style.display = 'inline-block';
+    document.getElementById('nextBtn').textContent = current === questions.length - 1 ? 'See Results' : 'Next Question';
+}
+
+function nextQuestion() {
+    current++;
+    if (current >= questions.length) { showResults(); return; }
+    renderQuestion();
+}
+
+function showResults() {
+    document.getElementById('questionArea').style.display = 'none';
+    document.getElementById('resultArea').style.display = 'block';
+    const pct = Math.round(score / questions.length * 100);
+    document.getElementById('scoreText').textContent = score + '/' + questions.length;
+    document.getElementById('scoreText').style.color = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--gold)' : 'var(--red)';
+    document.getElementById('scoreLabel').textContent = pct + '% correct';
+    const grades = pct >= 90 ? 'Debt Expert!' : pct >= 70 ? 'Well Informed!' : pct >= 50 ? 'Getting There' : pct >= 30 ? 'Room to Learn' : 'Time to Read Up!';
+    document.getElementById('gradeText').textContent = grades;
+    document.getElementById('progFill').style.width = '100%';
+}
+
+function shareResult() {
+    const text = 'I scored ' + score + '/' + questions.length + ' on the Nigeria Debt Literacy Quiz! Test yours at ' + window.location.origin + '/quiz';
+    if (navigator.share) { navigator.share({ text }); }
+    else { navigator.clipboard.writeText(text).then(() => alert('Copied to clipboard!')); }
+}
+
+function restartQuiz() {
+    current = 0; score = 0;
+    document.getElementById('questionArea').style.display = 'block';
+    document.getElementById('resultArea').style.display = 'none';
+    renderQuestion();
+}
+
+renderQuestion();
+</script>
+{% endblock %}

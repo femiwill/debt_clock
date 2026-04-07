@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Nigeria Debt Clock{% endblock %}</title>
+    <meta name="description" content="{% block description %}Track Nigeria's public debt, reserves, exchange rates, and fuel prices since 1999{% endblock %}">
+    <meta name="theme-color" content="#009401">
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f; --bg-card: #12121a; --bg-card-hover: #1a1a28;
+            --border: rgba(255,255,255,0.06); --border-hover: rgba(255,255,255,0.12);
+            --text-primary: #f0f0f5; --text-secondary: rgba(255,255,255,0.55);
+            --text-tertiary: rgba(255,255,255,0.3);
+            --green: #00e676; --red: #ff5252; --gold: #ffd740;
+            --blue: #448aff; --orange: #ff9100; --purple: #b388ff;
+            --ng-green: #009401; --ng-white: #ffffff;
+            --radius: 12px; --radius-sm: 8px;
+        }
+        [data-theme="light"] {
+            --bg: #f5f5f8; --bg-card: #ffffff; --bg-card-hover: #fafafa;
+            --border: rgba(0,0,0,0.08); --border-hover: rgba(0,0,0,0.15);
+            --text-primary: #1a1a2e; --text-secondary: rgba(0,0,0,0.55);
+            --text-tertiary: rgba(0,0,0,0.3);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-primary); line-height: 1.5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Header */
+        .header { background: linear-gradient(180deg, #0d1a0d 0%, var(--bg) 100%); border-bottom: 1px solid var(--border); padding: 1rem 0; position: relative; overflow: hidden; }
+        .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--ng-green), var(--gold), var(--ng-green)); }
+        .header-content { display: flex; align-items: center; justify-content: space-between; }
+        .logo { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; color: inherit; }
+        .logo-icon { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, var(--ng-green), #006d01); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #fff; }
+        .logo h1 { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.5px; }
+        .logo h1 span { color: var(--ng-green); }
+        .logo-sub { font-size: 0.62rem; color: var(--text-tertiary); font-weight: 500; }
+        .header-right { display: flex; align-items: center; gap: 0.75rem; }
+        .theme-toggle { background: none; border: 1px solid var(--border); border-radius: 50px; padding: 0.35rem 0.65rem; color: var(--text-secondary); cursor: pointer; font-size: 0.75rem; transition: all 0.2s; }
+        .theme-toggle:hover { border-color: var(--ng-green); color: var(--ng-green); }
+
+        /* Nav */
+        .nav { background: var(--bg-card); border-bottom: 1px solid var(--border); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .nav::-webkit-scrollbar { display: none; }
+        .nav-inner { display: flex; gap: 0; white-space: nowrap; }
+        .nav a { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.65rem 1rem; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); text-decoration: none; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .nav a:hover, .nav a.active { color: var(--ng-green); border-bottom-color: var(--ng-green); }
+        .nav a i { font-size: 0.85rem; }
+
+        /* Sections */
+        .section { padding: 2rem 0; }
+        .section-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; }
+        .section-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
+        .section-title { font-size: 1rem; font-weight: 700; }
+        .section-sub { font-size: 0.72rem; color: var(--text-tertiary); }
+
+        /* Cards */
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: all 0.3s; }
+        .card:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+
+        /* Chart Cards */
+        .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 1rem; }
+        .chart-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+        .chart-head { padding: 1rem 1.25rem 0; }
+        .chart-body { padding: 0.5rem 1rem 1rem; height: 320px; position: relative; }
+
+        /* Newsletter */
+        .newsletter { background: linear-gradient(135deg, #0d1a0d, var(--bg-card)); border-top: 1px solid var(--border); padding: 2rem 0; }
+        .newsletter-inner { display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+        .newsletter-text { font-size: 0.85rem; font-weight: 600; }
+        .newsletter form { display: flex; gap: 0.5rem; }
+        .newsletter input[type="email"] { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 1rem; color: var(--text-primary); font-size: 0.8rem; width: 260px; outline: none; }
+        .newsletter input[type="email"]:focus { border-color: var(--ng-green); }
+        .newsletter button { background: var(--ng-green); color: #fff; border: none; border-radius: var(--radius-sm); padding: 0.5rem 1.25rem; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+        .newsletter button:hover { opacity: 0.85; }
+        .flash-msg { text-align: center; padding: 0.5rem; font-size: 0.78rem; font-weight: 600; }
+        .flash-success { color: var(--green); }
+        .flash-error { color: var(--red); }
+
+        /* Footer */
+        .footer { border-top: 1px solid var(--border); padding: 1.5rem 0; text-align: center; font-size: 0.7rem; color: var(--text-tertiary); }
+        .footer a { color: var(--ng-green); text-decoration: none; }
+        .footer-brand { font-weight: 700; font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 0.25rem; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .chart-grid { grid-template-columns: 1fr; }
+            .chart-body { height: 260px; }
+            .newsletter input[type="email"] { width: 180px; }
+        }
+
+        {% block extra_styles %}{% endblock %}
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="container">
+        <div class="header-content">
+            <a href="/" class="logo">
+                <div class="logo-icon"><i class="bi bi-bank"></i></div>
+                <div>
+                    <h1>Nigeria <span>Debt Clock</span></h1>
+                    <div class="logo-sub">Government Borrowing Dashboard (1999–Present)</div>
+                </div>
+            </a>
+            <div class="header-right">
+                <a href="/embed-code" style="font-size:0.7rem;color:var(--text-tertiary);text-decoration:none;"><i class="bi bi-code-slash"></i> Embed</a>
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<nav class="nav">
+    <div class="container">
+        <div class="nav-inner">
+            <a href="/" class="{% if request.path == '/' %}active{% endif %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
+            <a href="/compare" class="{% if '/compare' in request.path %}active{% endif %}"><i class="bi bi-people"></i> Compare</a>
+            <a href="/breakdown" class="{% if '/breakdown' in request.path %}active{% endif %}"><i class="bi bi-pie-chart"></i> Debt Breakdown</a>
+            <a href="/states" class="{% if '/states' in request.path %}active{% endif %}"><i class="bi bi-geo-alt"></i> State Debt</a>
+            <a href="/africa" class="{% if '/africa' in request.path %}active{% endif %}"><i class="bi bi-globe-americas"></i> Africa Peers</a>
+            <a href="/quiz" class="{% if '/quiz' in request.path %}active{% endif %}"><i class="bi bi-question-circle"></i> Quiz</a>
+        </div>
+    </div>
+</nav>
+
+{% block content %}{% endblock %}
+
+<!-- Newsletter -->
+<section class="newsletter">
+    <div class="container">
+        {% if flash_msg %}
+        <div class="flash-msg {{ 'flash-success' if flash_type == 'success' else 'flash-error' }}">{{ flash_msg }}</div>
+        {% endif %}
+        <div class="newsletter-inner">
+            <span class="newsletter-text"><i class="bi bi-envelope"></i> Get monthly debt updates</span>
+            <form action="/subscribe" method="POST">
+                <input type="email" name="email" placeholder="your@email.com" required>
+                <button type="submit">Subscribe</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <div class="container">
+        <div class="footer-brand">Designed by Place of Ideation</div>
+        <div>Data sources: DMO, CBN, NBS, World Bank, Budget Office, IndexMundi.</div>
+        <div style="margin-top:0.35rem;">All figures are approximate and sourced from verified public records.</div>
+    </div>
+</footer>
+
+<script>
+function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    document.getElementById('themeIcon').className = isDark ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+}
+(function() {
+    const saved = localStorage.getItem('theme');
+    if (saved) {
+        document.documentElement.setAttribute('data-theme', saved);
+        document.getElementById('themeIcon').className = saved === 'dark' ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill';
+    }
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

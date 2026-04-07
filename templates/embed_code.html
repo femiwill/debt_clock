@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Embed Widget — Nigeria Debt Clock{% endblock %}
+
+{% block extra_styles %}
+.embed-page { max-width: 640px; margin: 0 auto; }
+.embed-preview { background: #0a0a0f; border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; }
+.embed-preview iframe { width: 100%; height: 180px; border: none; border-radius: 8px; }
+.code-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; position: relative; }
+.code-box textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; resize: none; height: 80px; outline: none; }
+.copy-btn { position: absolute; top: 0.75rem; right: 0.75rem; background: var(--ng-green); color: #fff; border: none; border-radius: var(--radius-sm); padding: 0.4rem 1rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+.copy-btn:hover { opacity: 0.85; }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="embed-page">
+            <div class="section-head">
+                <div class="section-icon" style="background:rgba(0,148,1,0.1);color:var(--ng-green);"><i class="bi bi-code-slash"></i></div>
+                <div>
+                    <div class="section-title">Embed Debt Widget</div>
+                    <div class="section-sub">Add a live Nigeria debt counter to your website</div>
+                </div>
+            </div>
+
+            <div class="embed-preview">
+                <iframe src="/embed"></iframe>
+            </div>
+
+            <div class="code-box">
+                <button class="copy-btn" onclick="copyCode()"><i class="bi bi-clipboard"></i> Copy</button>
+                <textarea id="embedCode" readonly>&lt;iframe src="{{ base_url }}/embed" width="480" height="180" frameborder="0" style="border-radius:12px;border:1px solid #222;"&gt;&lt;/iframe&gt;</textarea>
+            </div>
+            <p style="font-size:0.75rem;color:var(--text-tertiary);margin-top:1rem;">Copy the code above and paste it into your website's HTML. The widget auto-updates with the latest data.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyCode() {
+    const ta = document.getElementById('embedCode');
+    ta.select();
+    navigator.clipboard.writeText(ta.value).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+        setTimeout(() => btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy', 2000);
+    });
+}
+</script>
+{% endblock %}

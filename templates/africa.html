@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Africa Peers — Nigeria Debt Clock{% endblock %}
+
+{% block extra_styles %}
+.peer-table-wrap { overflow-x: auto; margin-bottom: 2rem; }
+.peer-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.peer-table th { background: var(--bg-card); border: 1px solid var(--border); padding: 0.65rem 0.85rem; text-align: left; font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); cursor: pointer; white-space: nowrap; }
+.peer-table th:hover { color: var(--ng-green); }
+.peer-table td { border: 1px solid var(--border); padding: 0.65rem 0.85rem; }
+.peer-table tr:hover { background: var(--bg-card-hover); }
+.peer-table .highlight { background: rgba(0,148,1,0.08); font-weight: 700; }
+.peer-table .mono { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+.peer-flag { font-size: 1.2rem; margin-right: 0.4rem; }
+.insight-card { background: linear-gradient(135deg, rgba(0,148,1,0.08), var(--bg-card)); border: 1px solid var(--ng-green)33; border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem; }
+.insight-card h4 { font-size: 0.85rem; color: var(--ng-green); margin-bottom: 0.5rem; }
+.insight-card p { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7; }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(68,138,255,0.1);color:var(--blue);"><i class="bi bi-globe-americas"></i></div>
+            <div>
+                <div class="section-title">Africa Peers Comparison</div>
+                <div class="section-sub">How does Nigeria compare with its African peers? (2024 estimates)</div>
+            </div>
+        </div>
+
+        <div class="insight-card">
+            <h4><i class="bi bi-lightbulb"></i> Key Insight</h4>
+            <p>Nigeria has the <strong>lowest debt-to-GDP ratio</strong> (35%) among major African economies, but the <strong>highest inflation rate</strong> (31%) and <strong>steepest currency depreciation</strong>. While the debt level appears manageable by ratio, the debt-service-to-revenue ratio (~64%) tells a more concerning story.</p>
+        </div>
+
+        <div class="peer-table-wrap">
+            <table class="peer-table" id="peerTable">
+                <thead>
+                    <tr>
+                        <th onclick="sortTable(0)">Country</th>
+                        <th onclick="sortTable(1)">Total Debt</th>
+                        <th onclick="sortTable(2)">Debt/GDP</th>
+                        <th onclick="sortTable(3)">Reserves</th>
+                        <th onclick="sortTable(4)">Debt/Capita</th>
+                        <th onclick="sortTable(5)">Population</th>
+                        <th onclick="sortTable(6)">Inflation</th>
+                        <th onclick="sortTable(7)">FX 5yr Dep.</th>
+                        <th onclick="sortTable(8)">Rating</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for name, d in peers.items() %}
+                    <tr class="{{ 'highlight' if name == 'Nigeria' }}">
+                        <td><span class="peer-flag">{{ d.flag }}</span><strong>{{ name }}</strong></td>
+                        <td class="mono">${{ '%.0f'|format(d.total_debt_usd) }}B</td>
+                        <td class="mono">{{ '%.1f'|format(d.debt_to_gdp) }}%</td>
+                        <td class="mono">${{ '%.1f'|format(d.external_reserves) }}B</td>
+                        <td class="mono">${{ '{:,.0f}'.format(d.debt_per_capita) }}</td>
+                        <td>{{ '%.0f'|format(d.population) }}M</td>
+                        <td class="mono" style="color:{% if d.inflation > 20 %}var(--red){% elif d.inflation > 10 %}var(--gold){% else %}var(--green){% endif %};">{{ '%.1f'|format(d.inflation) }}%</td>
+                        <td class="mono" style="color:{% if d.fx_dep_5yr > 100 %}var(--red){% elif d.fx_dep_5yr > 30 %}var(--gold){% else %}var(--green){% endif %};">{{ '%.0f'|format(d.fx_dep_5yr) }}%</td>
+                        <td style="font-size:0.72rem;">{{ d.credit_rating }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="chart-grid">
+            <div class="chart-card">
+                <div class="chart-head"><div><div class="section-title" style="font-size:0.88rem;"><i class="bi bi-bar-chart" style="color:var(--blue);"></i> Debt-to-GDP Ratio</div></div></div>
+                <div class="chart-body"><canvas id="d2gChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-head"><div><div class="section-title" style="font-size:0.88rem;"><i class="bi bi-person" style="color:var(--gold);"></i> Debt Per Capita (USD)</div></div></div>
+                <div class="chart-body"><canvas id="dpcChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-head"><div><div class="section-title" style="font-size:0.88rem;"><i class="bi bi-safe" style="color:var(--green);"></i> External Reserves (USD Billions)</div></div></div>
+                <div class="chart-body"><canvas id="resChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-head"><div><div class="section-title" style="font-size:0.88rem;"><i class="bi bi-arrow-up-circle" style="color:var(--red);"></i> Inflation Rate (%)</div></div></div>
+                <div class="chart-body"><canvas id="inflChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const peers = {{ peers | tojson }};
+const names = Object.keys(peers);
+const flags = names.map(n => peers[n].flag + ' ' + n);
+const ngIdx = names.indexOf('Nigeria');
+const colors = names.map((_, i) => i === ngIdx ? '#009401' : '#448aff');
+
+function barChart(id, data, label, cb) {
+    new Chart(document.getElementById(id), {
+        type: 'bar',
+        data: { labels: flags, datasets: [{ label, data, backgroundColor: colors.map(c => c + '80'), borderColor: colors, borderWidth: 1.5, borderRadius: 6 }] },
+        options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { ticks: { callback: cb, color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 11, weight: '600' } }, grid: { display: false } } }
+        }
+    });
+}
+
+barChart('d2gChart', names.map(n => peers[n].debt_to_gdp), 'Debt/GDP', v => v + '%');
+barChart('dpcChart', names.map(n => peers[n].debt_per_capita), 'Debt/Capita', v => '$' + v.toLocaleString());
+barChart('resChart', names.map(n => peers[n].external_reserves), 'Reserves', v => '$' + v + 'B');
+barChart('inflChart', names.map(n => peers[n].inflation), 'Inflation', v => v + '%');
+
+function sortTable(col) {
+    const table = document.getElementById('peerTable');
+    const rows = Array.from(table.tBodies[0].rows);
+    const dir = table.dataset.sortCol == col && table.dataset.sortDir == 'asc' ? 'desc' : 'asc';
+    table.dataset.sortCol = col; table.dataset.sortDir = dir;
+    rows.sort((a, b) => {
+        let va = a.cells[col].textContent.replace(/[^0-9.\-]/g, '');
+        let vb = b.cells[col].textContent.replace(/[^0-9.\-]/g, '');
+        if (!isNaN(va) && !isNaN(vb)) { va = parseFloat(va); vb = parseFloat(vb); }
+        return dir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+    });
+    rows.forEach(r => table.tBodies[0].appendChild(r));
+}
+</script>
+{% endblock %}

@@ -4,8 +4,9 @@ Economic dashboard tracking Nigeria's borrowing, reserves, exchange rates,
 and fuel prices across presidential administrations since 1999.
 """
 import os
+import re
 from datetime import datetime, timezone
-from flask import Flask, render_template, jsonify, Response, request
+from flask import Flask, render_template, jsonify, Response, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -83,7 +84,174 @@ class EconomicData(db.Model):
     minimum_wage = db.Column(db.Float, nullable=True)
 
 
+class Subscriber(db.Model):
+    __tablename__ = 'subscribers'
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(200), unique=True, nullable=False)
+    subscribed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    is_active = db.Column(db.Boolean, default=True)
+
+
 # ══════════════════════════════════════════════════════════════════════════════
+# STATIC DATA (hardcoded dicts — no DB models needed)
+# ══════════════════════════════════════════════════════════════════════════════
+
+AFRICA_PEERS = {
+    'Nigeria': {'flag': '🇳🇬', 'total_debt_usd': 89.3, 'debt_to_gdp': 35.4,
+                'external_reserves': 40.2, 'gdp_usd': 252, 'population': 225,
+                'debt_per_capita': 397, 'inflation': 31.4, 'fx_dep_5yr': 378,
+                'credit_rating': 'B- (S&P)'},
+    'South Africa': {'flag': '🇿🇦', 'total_debt_usd': 260, 'debt_to_gdp': 72.2,
+                     'external_reserves': 62.5, 'gdp_usd': 360, 'population': 62,
+                     'debt_per_capita': 4194, 'inflation': 4.5, 'fx_dep_5yr': 25,
+                     'credit_rating': 'BB- (S&P)'},
+    'Egypt': {'flag': '🇪🇬', 'total_debt_usd': 310, 'debt_to_gdp': 92.0,
+              'external_reserves': 46.7, 'gdp_usd': 337, 'population': 106,
+              'debt_per_capita': 2925, 'inflation': 27.5, 'fx_dep_5yr': 210,
+              'credit_rating': 'B- (Fitch)'},
+    'Kenya': {'flag': '🇰🇪', 'total_debt_usd': 82, 'debt_to_gdp': 72.0,
+              'external_reserves': 8.9, 'gdp_usd': 114, 'population': 56,
+              'debt_per_capita': 1464, 'inflation': 6.3, 'fx_dep_5yr': 32,
+              'credit_rating': 'B (Fitch)'},
+    'Ghana': {'flag': '🇬🇭', 'total_debt_usd': 55, 'debt_to_gdp': 83.0,
+              'external_reserves': 5.8, 'gdp_usd': 66, 'population': 34,
+              'debt_per_capita': 1618, 'inflation': 23.2, 'fx_dep_5yr': 180,
+              'credit_rating': 'SD (S&P)'},
+}
+
+DEBT_BREAKDOWN = {
+    'by_creditor': {
+        'Multilateral': {
+            'amount_usd': 20.8, 'pct': 47.3,
+            'details': [
+                {'name': 'World Bank (IDA/IBRD)', 'amount': 13.1},
+                {'name': 'AfDB/ADF', 'amount': 3.2},
+                {'name': 'IMF', 'amount': 2.8},
+                {'name': 'Other Multilateral', 'amount': 1.7},
+            ]
+        },
+        'Bilateral': {
+            'amount_usd': 5.2, 'pct': 11.8,
+            'details': [
+                {'name': 'China (Exim Bank)', 'amount': 3.8},
+                {'name': 'France (AFD)', 'amount': 0.5},
+                {'name': 'Japan (JICA)', 'amount': 0.4},
+                {'name': 'India/Germany/Other', 'amount': 0.5},
+            ]
+        },
+        'Commercial': {
+            'amount_usd': 18.0, 'pct': 40.9,
+            'details': [
+                {'name': 'Eurobonds', 'amount': 15.6},
+                {'name': 'Diaspora Bonds', 'amount': 0.3},
+                {'name': 'Other Commercial', 'amount': 2.1},
+            ]
+        },
+    },
+    'external_total': 44.0,
+    'domestic_total_ngn_tn': 65.7,
+    'domestic_instruments': {
+        'FGN Bonds': {'amount_ngn_tn': 32.5, 'pct': 49.5},
+        'Treasury Bills': {'amount_ngn_tn': 10.8, 'pct': 16.4},
+        'FGN Sukuk': {'amount_ngn_tn': 1.2, 'pct': 1.8},
+        'FGN Savings Bond': {'amount_ngn_tn': 0.3, 'pct': 0.5},
+        'Promissory Notes': {'amount_ngn_tn': 1.5, 'pct': 2.3},
+        'Ways & Means (Securitized)': {'amount_ngn_tn': 19.4, 'pct': 29.5},
+    }
+}
+
+# State debts — DMO Q3 2024 (domestic in NGN billions, external in USD millions)
+# Sorted by total_ngn_bn descending
+STATE_DEBTS = [
+    {'name': 'Lagos', 'domestic': 920, 'external': 1280, 'total': 2780},
+    {'name': 'Rivers', 'domestic': 380, 'external': 150, 'total': 598},
+    {'name': 'Delta', 'domestic': 340, 'external': 130, 'total': 529},
+    {'name': 'Akwa Ibom', 'domestic': 300, 'external': 210, 'total': 605},
+    {'name': 'Cross River', 'domestic': 280, 'external': 320, 'total': 745},
+    {'name': 'Ogun', 'domestic': 250, 'external': 80, 'total': 366},
+    {'name': 'Imo', 'domestic': 220, 'external': 150, 'total': 438},
+    {'name': 'Oyo', 'domestic': 210, 'external': 120, 'total': 384},
+    {'name': 'Kaduna', 'domestic': 200, 'external': 280, 'total': 607},
+    {'name': 'Bayelsa', 'domestic': 190, 'external': 130, 'total': 379},
+    {'name': 'Edo', 'domestic': 180, 'external': 220, 'total': 500},
+    {'name': 'FCT', 'domestic': 170, 'external': 100, 'total': 315},
+    {'name': 'Osun', 'domestic': 165, 'external': 90, 'total': 296},
+    {'name': 'Enugu', 'domestic': 155, 'external': 110, 'total': 315},
+    {'name': 'Kano', 'domestic': 150, 'external': 60, 'total': 237},
+    {'name': 'Plateau', 'domestic': 145, 'external': 85, 'total': 268},
+    {'name': 'Ekiti', 'domestic': 140, 'external': 50, 'total': 213},
+    {'name': 'Abia', 'domestic': 135, 'external': 55, 'total': 215},
+    {'name': 'Ondo', 'domestic': 130, 'external': 70, 'total': 232},
+    {'name': 'Bauchi', 'domestic': 125, 'external': 95, 'total': 263},
+    {'name': 'Benue', 'domestic': 120, 'external': 60, 'total': 207},
+    {'name': 'Niger', 'domestic': 115, 'external': 80, 'total': 231},
+    {'name': 'Kwara', 'domestic': 110, 'external': 45, 'total': 175},
+    {'name': 'Anambra', 'domestic': 105, 'external': 30, 'total': 149},
+    {'name': 'Kogi', 'domestic': 100, 'external': 75, 'total': 209},
+    {'name': 'Adamawa', 'domestic': 95, 'external': 65, 'total': 189},
+    {'name': 'Nasarawa', 'domestic': 90, 'external': 50, 'total': 163},
+    {'name': 'Taraba', 'domestic': 85, 'external': 45, 'total': 150},
+    {'name': 'Sokoto', 'domestic': 80, 'external': 40, 'total': 138},
+    {'name': 'Gombe', 'domestic': 78, 'external': 55, 'total': 158},
+    {'name': 'Ebonyi', 'domestic': 75, 'external': 100, 'total': 220},
+    {'name': 'Zamfara', 'domestic': 70, 'external': 30, 'total': 114},
+    {'name': 'Katsina', 'domestic': 68, 'external': 35, 'total': 119},
+    {'name': 'Kebbi', 'domestic': 65, 'external': 38, 'total': 120},
+    {'name': 'Jigawa', 'domestic': 60, 'external': 25, 'total': 96},
+    {'name': 'Yobe', 'domestic': 55, 'external': 35, 'total': 106},
+    {'name': 'Borno', 'domestic': 50, 'external': 40, 'total': 108},
+]
+
+QUIZ_QUESTIONS = [
+    {'question': "What is Nigeria's total public debt as of 2025?",
+     'options': ['$45 billion', '$99 billion', '$150 billion', '$200 billion'],
+     'correct': 1, 'explanation': "Nigeria's total public debt is approximately $99 billion (DMO 2025)."},
+    {'question': 'Which president oversaw the largest absolute increase in debt?',
+     'options': ['Obasanjo', 'Jonathan', 'Buhari', 'Tinubu'],
+     'correct': 2, 'explanation': 'Buhari added approximately $50B to the national debt between 2015-2023.'},
+    {'question': "What percentage of Nigeria's revenue goes to debt servicing (2025)?",
+     'options': ['25%', '44%', '64%', '92%'],
+     'correct': 2, 'explanation': 'Approximately 64% of federal revenue is consumed by debt service payments.'},
+    {'question': 'Which president achieved debt relief from the Paris Club?',
+     'options': ["Yar'Adua", 'Obasanjo', 'Jonathan', 'Buhari'],
+     'correct': 1, 'explanation': 'Obasanjo negotiated $18B in Paris Club debt relief in 2005-2006.'},
+    {'question': "What was the Naira/Dollar official rate when Obasanjo took office in 1999?",
+     'options': ['N22/$1', 'N92/$1', 'N150/$1', 'N306/$1'],
+     'correct': 1, 'explanation': 'The CBN IFEM rate was approximately N92/$1 in 1999.'},
+    {'question': 'What is the current petrol price per litre in Nigeria (2025)?',
+     'options': ['N165', 'N617', 'N900', 'N1,050'],
+     'correct': 3, 'explanation': 'Petrol price is approximately N1,050/litre as of 2025 after subsidy removal.'},
+    {'question': "Nigeria's debt-to-GDP ratio is approximately:",
+     'options': ['15%', '35%', '55%', '75%'],
+     'correct': 1, 'explanation': "Nigeria's debt-to-GDP ratio is about 35%, the lowest among major African peers."},
+    {'question': 'How much does China (Exim Bank) hold of Nigeria\'s external debt?',
+     'options': ['$1.2 billion', '$3.8 billion', '$8.5 billion', '$15 billion'],
+     'correct': 1, 'explanation': 'China Exim Bank holds approximately $3.8B (8.6% of external debt).'},
+    {'question': 'Which president removed the fuel subsidy?',
+     'options': ['Jonathan', 'Buhari', 'Tinubu', 'Obasanjo'],
+     'correct': 2, 'explanation': 'Tinubu removed the petrol subsidy in June 2023, causing prices to triple.'},
+    {'question': "Nigeria's peak inflation rate in 2024 was approximately:",
+     'options': ['15%', '22%', '31%', '45%'],
+     'correct': 2, 'explanation': 'Inflation peaked at approximately 31.4% in 2024.'},
+    {'question': 'What are the "Ways & Means" advances that were securitized?',
+     'options': ['Foreign loans', 'CBN overdraft to federal govt', 'State government bonds', 'Oil company debts'],
+     'correct': 1, 'explanation': 'Ways & Means are CBN overdraft advances to the federal government, securitized at N22.7T in 2023.'},
+    {'question': "What was Nigeria's external reserves at their peak?",
+     'options': ['$28 billion', '$43 billion', '$53 billion', '$65 billion'],
+     'correct': 2, 'explanation': 'External reserves peaked at approximately $53B in 2008 under Yar\'Adua.'},
+    {'question': 'How much total debt does each Nigerian citizen carry?',
+     'options': ['$150', '$430', '$800', '$1,200'],
+     'correct': 1, 'explanation': 'With $99B debt and 230M people, each Nigerian carries approximately $430 in public debt.'},
+    {'question': 'Which country has the highest debt-to-GDP ratio in Africa?',
+     'options': ['Nigeria (35%)', 'Kenya (72%)', 'Egypt (92%)', 'Ghana (83%)'],
+     'correct': 2, 'explanation': 'Egypt has the highest at approximately 92%, while Nigeria has the lowest among peers at 35%.'},
+    {'question': 'How many litres of petrol could a minimum wage buy in 1999?',
+     'options': ['50 litres', '100 litres', '150 litres', '250 litres'],
+     'correct': 2, 'explanation': 'With N3,000 wage and N20/litre petrol, a worker could buy 150 litres in 1999.'},
+]
+
+
+# ════════════��═════════════════════════════════════════════════════════════════
 # SEED DATA
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -247,63 +415,8 @@ def index():
 
         last = pdata[-1]
 
-        debt_inherited = prev_last.total_debt_usd
-        debt_left = last.total_debt_usd
-        debt_change = debt_left - debt_inherited
-        reserves_start = prev_last.external_reserves_usd
-        reserves_end = last.external_reserves_usd
-        reserves_change = reserves_end - reserves_start
-        fx_start = prev_last.exchange_rate_official
-        fx_end = last.exchange_rate_official
-        petrol_start = prev_last.petrol_price
-        petrol_end = last.petrol_price
-        gdp_start = prev_last.gdp_usd
-        gdp_end = last.gdp_usd
-        inflation_start = prev_last.inflation_rate
-        inflation_end = last.inflation_rate
-
-        # Debt service as % of revenue
-        ds_pct_start = None
-        if prev_last.debt_service_ngn_tn and prev_last.federal_revenue_ngn_tn:
-            ds_pct_start = prev_last.debt_service_ngn_tn / prev_last.federal_revenue_ngn_tn * 100
-        ds_pct_end = None
-        if last.debt_service_ngn_tn and last.federal_revenue_ngn_tn:
-            ds_pct_end = last.debt_service_ngn_tn / last.federal_revenue_ngn_tn * 100
-
-        # Litres of petrol per minimum wage
-        litres_start = None
-        if prev_last.minimum_wage and prev_last.petrol_price:
-            litres_start = prev_last.minimum_wage / prev_last.petrol_price
-        litres_end = None
-        if last.minimum_wage and last.petrol_price:
-            litres_end = last.minimum_wage / last.petrol_price
-
-        pres_summaries.append({
-            'president': pres,
-            'first': prev_last,
-            'last': last,
-            'years': f"{pres.start_year}–{pres.end_year or 'present'}",
-            'debt_inherited': debt_inherited,
-            'debt_left': debt_left,
-            'debt_change': debt_change,
-            'debt_change_pct': (debt_change / debt_inherited * 100) if debt_inherited else 0,
-            'reserves_start': reserves_start,
-            'reserves_end': reserves_end,
-            'reserves_change': reserves_change,
-            'fx_start': fx_start,
-            'fx_end': fx_end,
-            'fx_change_pct': ((fx_end - fx_start) / fx_start * 100) if fx_start else 0,
-            'petrol_start': petrol_start,
-            'petrol_end': petrol_end,
-            'gdp_start': gdp_start,
-            'gdp_end': gdp_end,
-            'inflation_start': inflation_start,
-            'inflation_end': inflation_end,
-            'ds_pct_start': ds_pct_start,
-            'ds_pct_end': ds_pct_end,
-            'litres_start': litres_start,
-            'litres_end': litres_end,
-        })
+        label = f"{pres.start_year}–{pres.end_year or 'present'}"
+        pres_summaries.append(build_pres_summary(pres, prev_last, last, label))
 
     # Per-citizen debt
     per_citizen_debt = None
@@ -362,6 +475,23 @@ def index():
             'color': pres.party_color,
         })
 
+    # Ticker-by-year data for timeline slider
+    ticker_by_year = []
+    for d in all_data:
+        per_cap = round(d.total_debt_usd * 1e9 / (d.population * 1e6)) if d.population else 0
+        ds_pct = round(d.debt_service_ngn_tn / d.federal_revenue_ngn_tn * 100, 1) \
+            if d.debt_service_ngn_tn and d.federal_revenue_ngn_tn else None
+        ticker_by_year.append({
+            'year': d.year, 'total_debt': d.total_debt_usd,
+            'reserves': d.external_reserves_usd, 'fx': d.exchange_rate_official,
+            'fx_parallel': d.exchange_rate_parallel or d.exchange_rate_official,
+            'petrol': d.petrol_price, 'diesel': d.diesel_price,
+            'debt_to_gdp': d.debt_to_gdp, 'inflation': d.inflation_rate,
+            'oil_price': d.oil_price_usd, 'population': d.population,
+            'per_capita': per_cap, 'debt_service_pct': ds_pct,
+            'gdp': d.gdp_usd,
+        })
+
     return render_template('index.html',
                            presidents=presidents,
                            pres_summaries=pres_summaries,
@@ -369,6 +499,7 @@ def index():
                            per_citizen_debt=per_citizen_debt,
                            debt_service_pct=debt_service_pct,
                            timeline=timeline,
+                           ticker_by_year=ticker_by_year,
                            eras=eras,
                            last_updated='April 2026')
 
@@ -399,6 +530,149 @@ def api_data():
     } for d in all_data])
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# HELPER: build presidential summary (reused by index and compare)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def build_pres_summary(pres, prev_last, last, years_label):
+    """Build a presidential summary dict from inherited/left data points."""
+    debt_change = last.total_debt_usd - prev_last.total_debt_usd
+    reserves_change = last.external_reserves_usd - prev_last.external_reserves_usd
+
+    ds_pct_start = None
+    if prev_last.debt_service_ngn_tn and prev_last.federal_revenue_ngn_tn:
+        ds_pct_start = prev_last.debt_service_ngn_tn / prev_last.federal_revenue_ngn_tn * 100
+    ds_pct_end = None
+    if last.debt_service_ngn_tn and last.federal_revenue_ngn_tn:
+        ds_pct_end = last.debt_service_ngn_tn / last.federal_revenue_ngn_tn * 100
+
+    litres_start = prev_last.minimum_wage / prev_last.petrol_price if prev_last.minimum_wage and prev_last.petrol_price else None
+    litres_end = last.minimum_wage / last.petrol_price if last.minimum_wage and last.petrol_price else None
+
+    return {
+        'president': pres,
+        'first': prev_last, 'last': last,
+        'years': years_label,
+        'debt_inherited': prev_last.total_debt_usd,
+        'debt_left': last.total_debt_usd,
+        'debt_change': debt_change,
+        'debt_change_pct': (debt_change / prev_last.total_debt_usd * 100) if prev_last.total_debt_usd else 0,
+        'reserves_start': prev_last.external_reserves_usd,
+        'reserves_end': last.external_reserves_usd,
+        'reserves_change': reserves_change,
+        'fx_start': prev_last.exchange_rate_official,
+        'fx_end': last.exchange_rate_official,
+        'fx_change_pct': ((last.exchange_rate_official - prev_last.exchange_rate_official) / prev_last.exchange_rate_official * 100) if prev_last.exchange_rate_official else 0,
+        'petrol_start': prev_last.petrol_price,
+        'petrol_end': last.petrol_price,
+        'gdp_start': prev_last.gdp_usd,
+        'gdp_end': last.gdp_usd,
+        'inflation_start': prev_last.inflation_rate,
+        'inflation_end': last.inflation_rate,
+        'ds_pct_start': ds_pct_start,
+        'ds_pct_end': ds_pct_end,
+        'litres_start': litres_start,
+        'litres_end': litres_end,
+    }
+
+
+@app.route('/compare')
+def compare():
+    presidents = President.query.order_by(President.start_year).all()
+    all_data = EconomicData.query.order_by(EconomicData.year).all()
+
+    p1_id = request.args.get('p1', 1, type=int)
+    p2_id = request.args.get('p2', 5, type=int)
+
+    pres_data = {}
+    for pres in presidents:
+        pres_data[pres.id] = [d for d in all_data if d.president_id == pres.id]
+
+    summaries = {}
+    yearly = {}
+    for pid in [p1_id, p2_id]:
+        pres = next((p for p in presidents if p.id == pid), presidents[0])
+        pdata = pres_data.get(pres.id, [])
+        if not pdata:
+            continue
+        idx = next((i for i, p in enumerate(presidents) if p.id == pres.id), 0)
+        if idx > 0 and pres_data.get(presidents[idx-1].id):
+            prev_last = pres_data[presidents[idx-1].id][-1]
+        else:
+            prev_last = pdata[0]
+        last = pdata[-1]
+        label = f"{pres.start_year}–{pres.end_year or 'present'}"
+        summaries[pid] = build_pres_summary(pres, prev_last, last, label)
+        yearly[pid] = [(d.year, d.total_debt_usd) for d in pdata]
+
+    return render_template('compare.html',
+                           presidents=presidents,
+                           p1=summaries.get(p1_id, summaries.get(presidents[0].id)),
+                           p2=summaries.get(p2_id, summaries.get(presidents[-1].id)),
+                           p1_yearly=yearly.get(p1_id, []),
+                           p2_yearly=yearly.get(p2_id, []))
+
+
+@app.route('/africa')
+def africa():
+    return render_template('africa.html', peers=AFRICA_PEERS)
+
+
+@app.route('/breakdown')
+def breakdown():
+    return render_template('breakdown.html', data=DEBT_BREAKDOWN)
+
+
+@app.route('/states')
+def states():
+    sorted_states = sorted(STATE_DEBTS, key=lambda s: s['total'], reverse=True)
+    top10 = [(s['name'], s['domestic'], s['external']) for s in sorted_states[:10]]
+    return render_template('states.html', states=sorted_states, top10=top10)
+
+
+@app.route('/quiz')
+def quiz():
+    return render_template('quiz.html', questions=QUIZ_QUESTIONS)
+
+
+@app.route('/embed')
+def embed():
+    latest = EconomicData.query.order_by(EconomicData.year.desc()).first()
+    per_citizen = round(latest.total_debt_usd * 1e9 / (latest.population * 1e6)) if latest and latest.population else 0
+    base_url = request.url_root.replace('http://', 'https://').rstrip('/')
+    return render_template('embed.html', latest=latest, per_citizen=per_citizen, base_url=base_url)
+
+
+@app.route('/embed-code')
+def embed_code():
+    base_url = request.url_root.replace('http://', 'https://').rstrip('/')
+    return render_template('embed_code.html', base_url=base_url)
+
+
+@app.route('/subscribe', methods=['POST'])
+def subscribe():
+    email = (request.form.get('email') or '').strip().lower()
+    flash_msg = ''
+    flash_type = 'error'
+    if not email or not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
+        flash_msg = 'Please enter a valid email address.'
+    else:
+        existing = Subscriber.query.filter_by(email=email).first()
+        if existing:
+            flash_msg = 'You are already subscribed!'
+            flash_type = 'success'
+        else:
+            db.session.add(Subscriber(email=email))
+            db.session.commit()
+            flash_msg = 'Subscribed successfully! You\'ll receive monthly updates.'
+            flash_type = 'success'
+    # Redirect back to referrer or home
+    referrer = request.referrer or '/'
+    # Pass flash via query params (simple approach, no session needed)
+    sep = '&' if '?' in referrer else '?'
+    return redirect(referrer)
+
+
 @app.route('/robots.txt')
 def robots_txt():
     lines = [
@@ -411,10 +685,13 @@ def robots_txt():
 @app.route('/sitemap.xml')
 def sitemap_xml():
     base = request.url_root.replace('http://', 'https://').rstrip('/')
+    pages = ['/', '/compare', '/breakdown', '/states', '/africa', '/quiz']
     xml = ['<?xml version="1.0" encoding="UTF-8"?>',
-           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-           f'<url><loc>{base}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>',
-           '</urlset>']
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for page in pages:
+        pri = '1.0' if page == '/' else '0.8'
+        xml.append(f'<url><loc>{base}{page}</loc><changefreq>weekly</changefreq><priority>{pri}</priority></url>')
+    xml.append('</urlset>')
     return Response("\n".join(xml), mimetype="application/xml")
 
 

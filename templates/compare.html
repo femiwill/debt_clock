@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Compare Presidents — Nigeria Debt Clock{% endblock %}
+
+{% block extra_styles %}
+.compare-controls { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+.compare-controls select { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 1rem; color: var(--text-primary); font-size: 0.85rem; font-weight: 600; cursor: pointer; outline: none; }
+.compare-controls select:focus { border-color: var(--ng-green); }
+.compare-vs { font-size: 1.2rem; font-weight: 800; color: var(--text-tertiary); }
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.compare-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.compare-card-head { padding: 1rem 1.25rem; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid var(--border); }
+.compare-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; color: #fff; }
+.compare-card-body { padding: 1rem 1.25rem; }
+.cmp-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+.cmp-row:last-child { border-bottom: none; }
+.cmp-label { font-size: 0.75rem; color: var(--text-secondary); }
+.cmp-val { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700; }
+.cmp-change { font-size: 0.65rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 50px; margin-left: 0.35rem; }
+.winner { color: var(--green); } .loser { color: var(--red); }
+
+/* Head-to-head bar */
+.h2h-section { margin-top: 2rem; }
+.h2h-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+.h2h-label { font-size: 0.72rem; color: var(--text-secondary); width: 100px; text-align: right; flex-shrink: 0; }
+.h2h-bar { flex: 1; display: flex; height: 28px; border-radius: 4px; overflow: hidden; }
+.h2h-bar-left { display: flex; align-items: center; justify-content: flex-end; padding: 0 0.5rem; font-size: 0.68rem; font-weight: 700; color: #fff; }
+.h2h-bar-right { display: flex; align-items: center; justify-content: flex-start; padding: 0 0.5rem; font-size: 0.68rem; font-weight: 700; color: #fff; }
+
+@media (max-width: 768px) { .compare-grid { grid-template-columns: 1fr; } }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(0,148,1,0.1);color:var(--ng-green);"><i class="bi bi-people-fill"></i></div>
+            <div>
+                <div class="section-title">Compare Two Presidents</div>
+                <div class="section-sub">Side-by-side economic performance comparison</div>
+            </div>
+        </div>
+
+        <div class="compare-controls">
+            <select id="selP1" onchange="goCompare()">
+                {% for p in presidents %}
+                <option value="{{ p.id }}" {{ 'selected' if p.id == p1.president.id }}>{{ p.name }} ({{ p.start_year }}–{{ p.end_year or 'present' }})</option>
+                {% endfor %}
+            </select>
+            <span class="compare-vs">VS</span>
+            <select id="selP2" onchange="goCompare()">
+                {% for p in presidents %}
+                <option value="{{ p.id }}" {{ 'selected' if p.id == p2.president.id }}>{{ p.name }} ({{ p.start_year }}–{{ p.end_year or 'present' }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="compare-grid">
+            {% for ps in [p1, p2] %}
+            <div class="compare-card">
+                <div class="compare-card-head" style="background:linear-gradient(135deg, {{ ps.president.party_color }}12, transparent);">
+                    <div class="compare-avatar" style="background:{{ ps.president.party_color }};">{{ ps.president.photo_initials }}</div>
+                    <div>
+                        <div style="font-weight:700;font-size:0.92rem;">{{ ps.president.name }}</div>
+                        <div style="font-size:0.7rem;color:var(--text-secondary);">{{ ps.years }} &middot; {{ ps.president.party }}</div>
+                    </div>
+                </div>
+                <div class="compare-card-body">
+                    {% set metrics = [
+                        ('Total Debt', '$' ~ '%.0f'|format(ps.debt_inherited) ~ 'B → $' ~ '%.0f'|format(ps.debt_left) ~ 'B', ps.debt_change, 'debt', True),
+                        ('Reserves', '$' ~ '%.0f'|format(ps.reserves_start) ~ 'B → $' ~ '%.0f'|format(ps.reserves_end) ~ 'B', ps.reserves_change, 'reserves', False),
+                        ('USD/NGN', '₦' ~ '%.0f'|format(ps.fx_start) ~ ' → ₦' ~ '%.0f'|format(ps.fx_end), ps.fx_change_pct, 'fx', True),
+                        ('Petrol', '₦' ~ '%.0f'|format(ps.petrol_start) ~ ' → ₦' ~ '%.0f'|format(ps.petrol_end), (ps.petrol_end - ps.petrol_start), 'petrol', True),
+                        ('GDP', '$' ~ '%.0f'|format(ps.gdp_start) ~ 'B → $' ~ '%.0f'|format(ps.gdp_end) ~ 'B', ps.gdp_end - ps.gdp_start, 'gdp', False),
+                    ] %}
+                    {% for label, vals, change, key, higher_bad in metrics %}
+                    <div class="cmp-row">
+                        <span class="cmp-label">{{ label }}</span>
+                        <span class="cmp-val">{{ vals }}
+                            <span class="cmp-change" style="color:{% if (higher_bad and change > 0) or (not higher_bad and change < 0) %}var(--red){% else %}var(--green){% endif %};background:{% if (higher_bad and change > 0) or (not higher_bad and change < 0) %}rgba(255,82,82,0.1){% else %}rgba(0,230,118,0.1){% endif %};">
+                                {{ '+' if change > 0 }}{{ '%.0f'|format(change) }}{% if key == 'fx' %}%{% elif key == 'petrol' %}{% else %}B{% endif %}
+                            </span>
+                        </span>
+                    </div>
+                    {% endfor %}
+                    {% if ps.inflation_start is not none %}
+                    <div class="cmp-row">
+                        <span class="cmp-label">Inflation</span>
+                        <span class="cmp-val">{{ '%.1f'|format(ps.inflation_start) }}% → {{ '%.1f'|format(ps.inflation_end) }}%
+                            {% set ic = ps.inflation_end - ps.inflation_start %}
+                            <span class="cmp-change" style="color:{% if ic > 0 %}var(--red){% else %}var(--green){% endif %};background:{% if ic > 0 %}rgba(255,82,82,0.1){% else %}rgba(0,230,118,0.1){% endif %};">{{ '+' if ic > 0 }}{{ '%.1f'|format(ic) }}pp</span>
+                        </span>
+                    </div>
+                    {% endif %}
+                    {% if ps.ds_pct_start is not none %}
+                    <div class="cmp-row">
+                        <span class="cmp-label">Debt Svc/Rev</span>
+                        <span class="cmp-val">{{ '%.0f'|format(ps.ds_pct_start) }}% → {{ '%.0f'|format(ps.ds_pct_end) }}%
+                            {% set dc = ps.ds_pct_end - ps.ds_pct_start %}
+                            <span class="cmp-change" style="color:{% if dc > 0 %}var(--red){% else %}var(--green){% endif %};background:{% if dc > 0 %}rgba(255,82,82,0.1){% else %}rgba(0,230,118,0.1){% endif %};">{{ '+' if dc > 0 }}{{ '%.0f'|format(dc) }}pp</span>
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Head to Head Visual -->
+        <div class="h2h-section">
+            <div class="section-head" style="margin-top:1rem;">
+                <div class="section-icon" style="background:rgba(68,138,255,0.1);color:var(--blue);"><i class="bi bi-bar-chart-steps"></i></div>
+                <div><div class="section-title">Head-to-Head</div><div class="section-sub">Who performed better on each metric?</div></div>
+            </div>
+            {% set p1c = p1.president.party_color %}
+            {% set p2c = p2.president.party_color %}
+            {% set comparisons = [
+                ('Debt Added', p1.debt_change|abs, p2.debt_change|abs, '$', 'B', True),
+                ('Reserves Change', p1.reserves_change, p2.reserves_change, '$', 'B', False),
+                ('FX Depreciation', p1.fx_change_pct, p2.fx_change_pct, '', '%', True),
+                ('GDP Change', p1.gdp_end - p1.gdp_start, p2.gdp_end - p2.gdp_start, '$', 'B', False),
+            ] %}
+            {% for label, v1, v2, pre, suf, lower_better in comparisons %}
+            {% set total = (v1|abs + v2|abs) if (v1|abs + v2|abs) > 0 else 1 %}
+            {% set pct1 = (v1|abs / total * 100)|round %}
+            {% set pct2 = 100 - pct1 %}
+            <div class="h2h-row">
+                <div class="h2h-label">{{ label }}</div>
+                <div class="h2h-bar">
+                    <div class="h2h-bar-left" style="width:{{ pct1 }}%;background:{{ p1c }};">{{ pre }}{{ '%.0f'|format(v1) }}{{ suf }}</div>
+                    <div class="h2h-bar-right" style="width:{{ pct2 }}%;background:{{ p2c }};">{{ pre }}{{ '%.0f'|format(v2) }}{{ suf }}</div>
+                </div>
+            </div>
+            {% endfor %}
+            <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-tertiary);margin-top:0.5rem;padding-left:108px;">
+                <span style="color:{{ p1c }};font-weight:700;">{{ p1.president.name.split()[-1] }}</span>
+                <span style="color:{{ p2c }};font-weight:700;">{{ p2.president.name.split()[-1] }}</span>
+            </div>
+        </div>
+
+        <!-- Debt Trajectory Chart -->
+        <div style="margin-top:2rem;">
+            <div class="chart-card">
+                <div class="chart-head"><div><div class="section-title" style="font-size:0.88rem;"><i class="bi bi-graph-up" style="color:var(--blue);"></i> Debt Trajectory Comparison</div><div class="section-sub">Total debt over each president's tenure</div></div></div>
+                <div class="chart-body"><canvas id="compareChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function goCompare() {
+    const p1 = document.getElementById('selP1').value;
+    const p2 = document.getElementById('selP2').value;
+    window.location.href = '/compare?p1=' + p1 + '&p2=' + p2;
+}
+
+const p1Data = {{ p1_yearly | tojson }};
+const p2Data = {{ p2_yearly | tojson }};
+
+const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+new Chart(document.getElementById('compareChart'), {
+    type: 'line',
+    data: {
+        labels: p1Data.map((_, i) => 'Year ' + (i + 1)),
+        datasets: [
+            { label: '{{ p1.president.name.split()[-1] }}', data: p1Data.map(d => d[1]), borderColor: '{{ p1.president.party_color }}', backgroundColor: '{{ p1.president.party_color }}18', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '{{ p1.president.party_color }}' },
+            { label: '{{ p2.president.name.split()[-1] }}', data: p2Data.map(d => d[1]), borderColor: '{{ p2.president.party_color }}', backgroundColor: '{{ p2.president.party_color }}18', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '{{ p2.president.party_color }}' },
+        ]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, labels: { color: isDark() ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)', font: { size: 12 }, boxWidth: 12 } } },
+        scales: { y: { ticks: { callback: v => '$' + v + 'B', color: isDark() ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }, grid: { color: isDark() ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)' } }, x: { ticks: { color: isDark() ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }, grid: { color: isDark() ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)' } } }
+    }
+});
+</script>
+{% endblock %}

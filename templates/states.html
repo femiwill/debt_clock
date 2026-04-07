@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}State-by-State Debt — Nigeria Debt Clock{% endblock %}
+
+{% block extra_styles %}
+.search-bar { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.75rem 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem; }
+.search-bar input { background: transparent; border: none; color: var(--text-primary); font-size: 0.85rem; flex: 1; outline: none; }
+.search-bar i { color: var(--text-tertiary); }
+.state-table-wrap { overflow-x: auto; margin-bottom: 2rem; }
+.state-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.state-table th { background: var(--bg-card); border: 1px solid var(--border); padding: 0.6rem 0.75rem; text-align: left; font-weight: 700; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); cursor: pointer; white-space: nowrap; }
+.state-table th:hover { color: var(--ng-green); }
+.state-table td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; }
+.state-table tr:hover { background: var(--bg-card-hover); }
+.state-table .mono { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.75rem; }
+.rank-badge { display: inline-block; width: 24px; height: 24px; border-radius: 50%; background: var(--bg); text-align: center; line-height: 24px; font-size: 0.65rem; font-weight: 700; }
+.top3 { background: var(--gold); color: #000; }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(0,148,1,0.1);color:var(--ng-green);"><i class="bi bi-geo-alt-fill"></i></div>
+            <div>
+                <div class="section-title">State-by-State Debt (36 States + FCT)</div>
+                <div class="section-sub">Domestic and external debt stock by state (DMO Q3 2024). Click headers to sort.</div>
+            </div>
+        </div>
+
+        <div class="search-bar">
+            <i class="bi bi-search"></i>
+            <input type="text" id="stateSearch" placeholder="Search states..." oninput="filterStates()">
+        </div>
+
+        <!-- Top 10 Chart -->
+        <div class="chart-card" style="margin-bottom:1.5rem;">
+            <div class="chart-head"><div><div class="section-title" style="font-size:0.88rem;"><i class="bi bi-bar-chart" style="color:var(--red);"></i> Top 10 Most Indebted States</div></div></div>
+            <div class="chart-body" style="height:360px;"><canvas id="top10Chart"></canvas></div>
+        </div>
+
+        <div class="state-table-wrap">
+            <table class="state-table" id="stateTable">
+                <thead>
+                    <tr>
+                        <th onclick="sortST(0)">#</th>
+                        <th onclick="sortST(1)">State</th>
+                        <th onclick="sortST(2)">Domestic (NGN B)</th>
+                        <th onclick="sortST(3)">External (USD M)</th>
+                        <th onclick="sortST(4)">Total (NGN B)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in states %}
+                    <tr>
+                        <td><span class="rank-badge {{ 'top3' if loop.index <= 3 }}">{{ loop.index }}</span></td>
+                        <td><strong>{{ s.name }}</strong></td>
+                        <td class="mono">{{ '{:,.0f}'.format(s.domestic) }}</td>
+                        <td class="mono">{{ '{:,.0f}'.format(s.external) }}</td>
+                        <td class="mono">{{ '{:,.0f}'.format(s.total) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const top10 = {{ top10 | tojson }};
+
+new Chart(document.getElementById('top10Chart'), {
+    type: 'bar',
+    data: {
+        labels: top10.map(s => s[0]),
+        datasets: [
+            { label: 'Domestic (NGN B)', data: top10.map(s => s[1]), backgroundColor: '#448aff80', borderColor: '#448aff', borderWidth: 1.5, borderRadius: 4 },
+            { label: 'External (USD M)', data: top10.map(s => s[2]), backgroundColor: '#ff910080', borderColor: '#ff9100', borderWidth: 1.5, borderRadius: 4 },
+        ]
+    },
+    options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, labels: { color: 'rgba(255,255,255,0.5)', font: { size: 11 }, boxWidth: 12 } } },
+        scales: {
+            x: { stacked: false, ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 11, weight: '600' } }, grid: { display: false } }
+        }
+    }
+});
+
+function filterStates() {
+    const q = document.getElementById('stateSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('#stateTable tbody tr');
+    rows.forEach(r => { r.style.display = r.cells[1].textContent.toLowerCase().includes(q) ? '' : 'none'; });
+}
+
+function sortST(col) {
+    const table = document.getElementById('stateTable');
+    const rows = Array.from(table.tBodies[0].rows);
+    const dir = table.dataset.sc == col && table.dataset.sd == 'asc' ? 'desc' : 'asc';
+    table.dataset.sc = col; table.dataset.sd = dir;
+    rows.sort((a, b) => {
+        let va = a.cells[col].textContent.replace(/[^0-9.\-]/g, '');
+        let vb = b.cells[col].textContent.replace(/[^0-9.\-]/g, '');
+        if (!isNaN(va) && !isNaN(vb)) { va = parseFloat(va); vb = parseFloat(vb); }
+        return dir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+    });
+    rows.forEach(r => table.tBodies[0].appendChild(r));
+}
+</script>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Debt Breakdown — Nigeria Debt Clock{% endblock %}
+
+{% block extra_styles %}
+.breakdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.breakdown-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.breakdown-card-head { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
+.breakdown-card-head h3 { font-size: 0.92rem; font-weight: 700; }
+.breakdown-card-head .sub { font-size: 0.72rem; color: var(--text-tertiary); }
+.breakdown-card-body { padding: 1rem 1.25rem; }
+.donut-wrap { height: 280px; position: relative; }
+.detail-list { margin-top: 1rem; }
+.detail-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.78rem; }
+.detail-item:last-child { border-bottom: none; }
+.detail-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 0.5rem; flex-shrink: 0; }
+.detail-name { display: flex; align-items: center; color: var(--text-secondary); }
+.detail-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+.highlight-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.hl-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; display: flex; align-items: center; gap: 1rem; }
+.hl-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+.hl-title { font-size: 0.72rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.hl-value { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 800; }
+@media (max-width: 768px) { .breakdown-grid { grid-template-columns: 1fr; } }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(179,136,255,0.1);color:var(--purple);"><i class="bi bi-pie-chart-fill"></i></div>
+            <div>
+                <div class="section-title">Who Does Nigeria Owe?</div>
+                <div class="section-sub">Breakdown of Nigeria's ${{ '%.1f'|format(data.external_total) }}B external and &#8358;{{ '%.1f'|format(data.domestic_total_ngn_tn) }}T domestic debt (2024)</div>
+            </div>
+        </div>
+
+        <div class="highlight-cards">
+            <div class="hl-card">
+                <div class="hl-icon" style="background:rgba(255,82,82,0.1);"><i class="bi bi-flag" style="color:var(--red);"></i></div>
+                <div>
+                    <div class="hl-title">China (Exim Bank)</div>
+                    <div class="hl-value" style="color:var(--red);">${{ '%.1f'|format(data.by_creditor.Bilateral.details[0].amount) }}B</div>
+                    <div style="font-size:0.68rem;color:var(--text-tertiary);">{{ '%.1f'|format(data.by_creditor.Bilateral.details[0].amount / data.external_total * 100) }}% of external debt</div>
+                </div>
+            </div>
+            <div class="hl-card">
+                <div class="hl-icon" style="background:rgba(255,215,64,0.1);"><i class="bi bi-bank2" style="color:var(--gold);"></i></div>
+                <div>
+                    <div class="hl-title">Ways & Means (Securitized)</div>
+                    <div class="hl-value" style="color:var(--gold);">&#8358;{{ '%.1f'|format(data.domestic_instruments['Ways & Means (Securitized)'].amount_ngn_tn) }}T</div>
+                    <div style="font-size:0.68rem;color:var(--text-tertiary);">{{ '%.1f'|format(data.domestic_instruments['Ways & Means (Securitized)'].pct) }}% of domestic debt</div>
+                </div>
+            </div>
+            <div class="hl-card">
+                <div class="hl-icon" style="background:rgba(68,138,255,0.1);"><i class="bi bi-globe" style="color:var(--blue);"></i></div>
+                <div>
+                    <div class="hl-title">Eurobonds</div>
+                    <div class="hl-value" style="color:var(--blue);">${{ '%.1f'|format(data.by_creditor.Commercial.details[0].amount) }}B</div>
+                    <div style="font-size:0.68rem;color:var(--text-tertiary);">{{ '%.1f'|format(data.by_creditor.Commercial.details[0].amount / data.external_total * 100) }}% of external debt</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="breakdown-grid">
+            <!-- External Debt -->
+            <div class="breakdown-card">
+                <div class="breakdown-card-head">
+                    <h3><i class="bi bi-globe2"></i> External Debt — ${{ '%.1f'|format(data.external_total) }}B</h3>
+                    <div class="sub">By creditor type</div>
+                </div>
+                <div class="breakdown-card-body">
+                    <div class="donut-wrap"><canvas id="extDonut"></canvas></div>
+                    <div class="detail-list">
+                        {% set ext_colors = ['#448aff', '#ff9100', '#b388ff'] %}
+                        {% for cat, info in data.by_creditor.items() %}
+                        <div class="detail-item" style="font-weight:700;">
+                            <span class="detail-name"><span class="detail-dot" style="background:{{ ext_colors[loop.index0] }};"></span>{{ cat }}</span>
+                            <span class="detail-val">${{ '%.1f'|format(info.amount_usd) }}B ({{ '%.0f'|format(info.pct) }}%)</span>
+                        </div>
+                        {% for sub in info.details %}
+                        <div class="detail-item" style="padding-left:1.5rem;">
+                            <span class="detail-name">{{ sub.name }}</span>
+                            <span class="detail-val" style="font-size:0.72rem;">${{ '%.1f'|format(sub.amount) }}B</span>
+                        </div>
+                        {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <!-- Domestic Debt -->
+            <div class="breakdown-card">
+                <div class="breakdown-card-head">
+                    <h3><i class="bi bi-building"></i> Domestic Debt — &#8358;{{ '%.1f'|format(data.domestic_total_ngn_tn) }}T</h3>
+                    <div class="sub">By instrument type</div>
+                </div>
+                <div class="breakdown-card-body">
+                    <div class="donut-wrap"><canvas id="domDonut"></canvas></div>
+                    <div class="detail-list">
+                        {% set dom_colors = ['#448aff', '#00e676', '#ffd740', '#ff9100', '#b388ff', '#ff5252'] %}
+                        {% for name, info in data.domestic_instruments.items() %}
+                        <div class="detail-item">
+                            <span class="detail-name"><span class="detail-dot" style="background:{{ dom_colors[loop.index0 % 6] }};"></span>{{ name }}</span>
+                            <span class="detail-val">&#8358;{{ '%.1f'|format(info.amount_ngn_tn) }}T ({{ '%.0f'|format(info.pct) }}%)</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const extData = {{ data.by_creditor | tojson }};
+const domData = {{ data.domestic_instruments | tojson }};
+
+function donut(id, labels, data, colors) {
+    new Chart(document.getElementById(id), {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: '#12121a', borderWidth: 3, hoverOffset: 8 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '55%',
+            plugins: {
+                legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.5)', font: { size: 11 }, boxWidth: 12, padding: 15 } },
+                tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + (id === 'extDonut' ? 'B' : 'T') + ' (' + ctx.dataset.data.reduce((a,b)=>a+b,0) > 0 ? (ctx.parsed / ctx.dataset.data.reduce((a,b)=>a+b,0) * 100).toFixed(0) + '%' : '' + ')' } }
+            }
+        }
+    });
+}
+
+donut('extDonut',
+    Object.keys(extData),
+    Object.values(extData).map(v => v.amount_usd),
+    ['#448aff', '#ff9100', '#b388ff']
+);
+
+donut('domDonut',
+    Object.keys(domData),
+    Object.values(domData).map(v => v.amount_ngn_tn),
+    ['#448aff', '#00e676', '#ffd740', '#ff9100', '#b388ff', '#ff5252']
+);
+</script>
+{% endblock %}
