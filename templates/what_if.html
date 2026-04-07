@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}What-If Scenarios — Nigeria Debt Clock{% endblock %}
+{% block description %}AI-powered economic scenario analysis for Nigeria's debt{% endblock %}
+
+{% block extra_styles %}
+.wif-container { max-width: 800px; margin: 0 auto; }
+.wif-input-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; }
+.wif-textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.85rem 1rem; color: var(--text-primary); font-size: 0.85rem; font-family: inherit; outline: none; resize: vertical; min-height: 80px; }
+.wif-textarea:focus { border-color: var(--ng-green); }
+.wif-btn { background: var(--ng-green); color: #fff; border: none; border-radius: var(--radius-sm); padding: 0.6rem 1.5rem; font-size: 0.82rem; font-weight: 700; cursor: pointer; margin-top: 0.75rem; display: inline-flex; align-items: center; gap: 0.35rem; }
+.wif-btn:hover { opacity: 0.85; }
+.wif-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.wif-presets { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+.wif-preset { background: var(--bg-card); border: 1px solid var(--border); border-radius: 50px; padding: 0.45rem 1rem; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+.wif-preset:hover { border-color: var(--ng-green); color: var(--ng-green); }
+.wif-result { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-top: 1rem; display: none; }
+.wif-result h2, .wif-result h3 { font-size: 0.9rem; color: var(--ng-green); margin: 1rem 0 0.5rem; }
+.wif-result h2:first-child { margin-top: 0; }
+.wif-result p { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.65; margin-bottom: 0.5rem; }
+.wif-result strong { color: var(--text-primary); }
+.wif-result ul, .wif-result ol { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.8; padding-left: 1.25rem; margin-bottom: 0.5rem; }
+.wif-loading { text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 0.82rem; }
+.wif-loading i { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(179,136,255,0.1);color:var(--purple);"><i class="bi bi-lightning"></i></div>
+            <div>
+                <div class="section-title">AI "What If" Scenario Engine</div>
+                <div class="section-sub">Describe any economic scenario and AI will analyze the cascading effects on Nigeria's economy</div>
+            </div>
+        </div>
+
+        <div class="wif-container">
+            <div style="font-size:0.78rem;font-weight:700;color:var(--text-tertiary);margin-bottom:0.5rem;"><i class="bi bi-lightning"></i> Quick Scenarios</div>
+            <div class="wif-presets">
+                <button class="wif-preset" onclick="setScenario(this)">Oil crashes to $30/barrel</button>
+                <button class="wif-preset" onclick="setScenario(this)">Nigeria restructures its Eurobonds</button>
+                <button class="wif-preset" onclick="setScenario(this)">Naira strengthens to N800/$</button>
+                <button class="wif-preset" onclick="setScenario(this)">Inflation drops to single digits</button>
+                <button class="wif-preset" onclick="setScenario(this)">Nigeria gets $10B IMF loan</button>
+                <button class="wif-preset" onclick="setScenario(this)">Tax revenue doubles in 3 years</button>
+                <button class="wif-preset" onclick="setScenario(this)">Global recession hits in 2026</button>
+                <button class="wif-preset" onclick="setScenario(this)">Nigeria discovers new mega oil field</button>
+            </div>
+
+            <div class="wif-input-box">
+                <label style="font-size:0.72rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:0.5rem;">Describe your scenario</label>
+                <textarea class="wif-textarea" id="scenarioInput" placeholder="Example: What if oil drops to $30 per barrel and stays there for 2 years?"></textarea>
+                <button class="wif-btn" id="analyzeBtn" onclick="analyzeScenario()"><i class="bi bi-lightning"></i> Analyze Scenario</button>
+            </div>
+
+            <div id="wifLoading" class="wif-loading" style="display:none;">
+                <i class="bi bi-arrow-repeat"></i> AI is analyzing your scenario...
+            </div>
+
+            <div class="wif-result" id="wifResult"></div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setScenario(btn) {
+    document.getElementById('scenarioInput').value = btn.textContent;
+    analyzeScenario();
+}
+
+async function analyzeScenario() {
+    const scenario = document.getElementById('scenarioInput').value.trim();
+    if (!scenario) return;
+
+    const btn = document.getElementById('analyzeBtn');
+    const loading = document.getElementById('wifLoading');
+    const result = document.getElementById('wifResult');
+
+    btn.disabled = true;
+    loading.style.display = '';
+    result.style.display = 'none';
+
+    try {
+        const res = await fetch('/api/what-if', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({scenario})
+        });
+        const data = await res.json();
+        loading.style.display = 'none';
+
+        if (data.error) {
+            result.innerHTML = '<p style="color:var(--red);">' + data.error + '</p>';
+        } else {
+            // Convert markdown to HTML
+            let html = data.response
+                .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+                .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/^- (.*$)/gm, '<li>$1</li>')
+                .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>');
+            html = '<p>' + html + '</p>';
+            result.innerHTML = html;
+        }
+        result.style.display = '';
+    } catch(e) {
+        loading.style.display = 'none';
+        result.innerHTML = '<p style="color:var(--red);">Connection error. Please try again.</p>';
+        result.style.display = '';
+    }
+    btn.disabled = false;
+}
+</script>
+{% endblock %}

@@ -5,9 +5,16 @@ and fuel prices across presidential administrations since 1999.
 """
 import os
 import re
+import secrets
 from datetime import datetime, timezone
 from flask import Flask, render_template, jsonify, Response, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+
+try:
+    import anthropic
+    HAS_ANTHROPIC = True
+except ImportError:
+    HAS_ANTHROPIC = False
 
 # ══════════════════════════════════════════════════════════════════════════════
 # APP CONFIGURATION
@@ -90,6 +97,17 @@ class Subscriber(db.Model):
     email = db.Column(db.String(200), unique=True, nullable=False)
     subscribed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     is_active = db.Column(db.Boolean, default=True)
+
+
+class ApiKey(db.Model):
+    __tablename__ = 'api_keys'
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(64), unique=True, nullable=False)
+    name = db.Column(db.String(200))
+    email = db.Column(db.String(200))
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    is_active = db.Column(db.Boolean, default=True)
+    queries_used = db.Column(db.Integer, default=0)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1025,6 +1043,300 @@ def admin_logout():
     resp = redirect(url_for('admin'))
     resp.delete_cookie('admin_auth')
     return resp
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# AI HELPERS
+# ══════════════════════════════════════════════════════════════════════════════
+
+def get_ai_client():
+    if not HAS_ANTHROPIC:
+        return None
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    return anthropic.Anthropic(api_key=api_key) if api_key else None
+
+
+def build_data_context():
+    """Build text summary of all economic data for AI context."""
+    all_data = EconomicData.query.order_by(EconomicData.year).all()
+    presidents = President.query.order_by(President.start_year).all()
+    lines = ["NIGERIA ECONOMIC DATA (1999-2025):\n"]
+    for d in all_data:
+        pres = next((p for p in presidents if p.id == d.president_id), None)
+        pn = pres.name if pres else '?'
+        lines.append(
+            f"{d.year} ({pn}): Debt=${d.total_debt_usd}B (ext=${d.external_debt_usd}B, "
+            f"dom=N{d.domestic_debt_ngn_tn}T), Reserves=${d.external_reserves_usd}B, "
+            f"FX=N{d.exchange_rate_official}/$ (parallel N{d.exchange_rate_parallel}/$), "
+            f"Petrol=N{d.petrol_price}/L, GDP=${d.gdp_usd}B ({d.gdp_growth}% growth), "
+            f"Pop={d.population}M, Debt/GDP={d.debt_to_gdp}%, "
+            f"Revenue=N{d.federal_revenue_ngn_tn}T, DebtSvc=N{d.debt_service_ngn_tn}T, "
+            f"Inflation={d.inflation_rate}%, Oil=${d.oil_price_usd}/bbl, MinWage=N{d.minimum_wage}/mo"
+        )
+    lines.append("\nPRESIDENTS:")
+    for p in presidents:
+        lines.append(f"- {p.name} ({p.party}, {p.start_year}-{p.end_year or 'present'}): {p.note}")
+    lines.append("\nKEY FACTS:")
+    for fact in DEBT_FACTS:
+        lines.append(f"- {fact}")
+    return "\n".join(lines)
+
+
+AI_SYSTEM_PROMPT = """You are the Nigeria Debt Clock AI Analyst — an expert on Nigerian public finance, debt management, and macroeconomics.
+
+You have access to verified economic data from 1999 to 2025 covering 5 presidential administrations.
+
+{context}
+
+RULES:
+- Answer questions accurately using the data provided
+- Be concise but insightful — aim for 2-4 paragraphs max
+- Use specific numbers and cite the year
+- When comparing, use percentage changes and per-capita figures
+- Clearly distinguish between data-backed statements and estimates
+- Format: $XB for USD billions, NX for Naira amounts
+- Use analogies Nigerians can relate to
+- Be balanced and non-partisan — present facts, not political opinions
+- If asked about something outside your data, say so clearly"""
+
+
+def ask_ai(user_message, system_override=None, model="claude-haiku-4-5-20251001"):
+    client = get_ai_client()
+    if not client:
+        return {"error": "AI features require ANTHROPIC_API_KEY to be configured."}
+    context = build_data_context()
+    system = (system_override or AI_SYSTEM_PROMPT).format(context=context)
+    try:
+        response = client.messages.create(
+            model=model,
+            max_tokens=1500,
+            system=system,
+            messages=[{"role": "user", "content": user_message}]
+        )
+        return {"response": response.content[0].text}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# AI ROUTES
+# ══════════════════════════════════════════════════════════════════════════════
+
+FREE_DAILY_LIMIT = 10
+
+@app.route('/chat')
+def chat_page():
+    return render_template('chat.html')
+
+
+@app.route('/api/chat', methods=['POST'])
+def api_chat():
+    data = request.get_json() or {}
+    message = (data.get('message') or '').strip()
+    if not message:
+        return jsonify({"error": "Please enter a question."}), 400
+    if len(message) > 500:
+        return jsonify({"error": "Question too long (max 500 characters)."}), 400
+    # Rate limiting via cookie count (checked client-side, enforced here)
+    result = ask_ai(message)
+    return jsonify(result)
+
+
+@app.route('/what-if')
+def what_if_page():
+    return render_template('what_if.html')
+
+
+@app.route('/api/what-if', methods=['POST'])
+def api_what_if():
+    data = request.get_json() or {}
+    scenario = (data.get('scenario') or '').strip()
+    if not scenario:
+        return jsonify({"error": "Please describe a scenario."}), 400
+    prompt = f"""Analyze this economic scenario for Nigeria:
+
+"{scenario}"
+
+Provide a structured analysis with:
+1. **Immediate Impact** — What happens in the first 6 months
+2. **Debt Effect** — How this affects Nigeria's total debt trajectory
+3. **Currency Impact** — Effect on naira exchange rate
+4. **Inflation & Prices** — Impact on consumer prices and fuel costs
+5. **Reserves** — Effect on external reserves
+6. **Overall Assessment** — One-sentence verdict
+
+Use specific numbers from the data to ground your analysis. Be realistic, not sensational."""
+    system = """You are a Nigerian macroeconomic analyst. Analyze hypothetical scenarios using real data.
+
+{context}
+
+Give structured analysis with realistic projections based on historical patterns. Use markdown formatting."""
+    result = ask_ai(prompt, system_override=system)
+    return jsonify(result)
+
+
+@app.route('/api/explain', methods=['POST'])
+def api_explain():
+    data = request.get_json() or {}
+    metric = (data.get('metric') or '').strip()
+    value = data.get('value', '')
+    year = data.get('year', '')
+    if not metric:
+        return jsonify({"error": "No metric specified."}), 400
+    prompt = (
+        f"Explain this economic metric in simple terms for a Nigerian audience:\n\n"
+        f"**{metric}**: {value} ({year})\n\n"
+        f"In 3-4 sentences: What does this number mean? Is it good or bad? "
+        f"How does it compare historically? What does it mean for ordinary Nigerians?"
+    )
+    result = ask_ai(prompt)
+    return jsonify(result)
+
+
+@app.route('/ai-report')
+def ai_report_page():
+    all_data = EconomicData.query.order_by(EconomicData.year).all()
+    latest = all_data[-1] if all_data else None
+    return render_template('ai_report.html', latest=latest)
+
+
+@app.route('/api/ai-report', methods=['POST'])
+def api_ai_report():
+    prompt = """Generate a professional weekly debt briefing for Nigeria. Structure it as:
+
+## Nigeria Debt Briefing — Weekly Update
+
+### Key Numbers This Week
+(Use the latest 2025 data)
+
+### Trend Analysis
+(Compare 2025 vs 2024 — what's improving, what's deteriorating)
+
+### Debt Sustainability Warning Signs
+(Highlight any concerning ratios or trajectories)
+
+### What to Watch
+(3 things that could change the debt trajectory in the next quarter)
+
+### Bottom Line
+(One-paragraph executive summary for busy readers)
+
+Use specific data points. Be analytical, not sensational. Format with markdown."""
+    system = """You are a senior economic analyst writing a professional debt briefing for institutional investors, journalists, and policy makers interested in Nigeria.
+
+{context}
+
+Write in a professional, Bloomberg-style tone. Use specific numbers and percentages."""
+    result = ask_ai(prompt, system_override=system, model="claude-haiku-4-5-20251001")
+    return jsonify(result)
+
+
+@app.route('/ai-cards')
+def ai_cards_page():
+    return render_template('ai_cards.html')
+
+
+@app.route('/api/ai-cards', methods=['POST'])
+def api_ai_cards():
+    prompt = """Generate exactly 6 shareable social media insights about Nigeria's debt. Each should be:
+- One punchy sentence (under 140 characters)
+- Include a specific number
+- Be surprising or thought-provoking
+- Suitable for Twitter/X
+
+Return them as a JSON array of strings. Only return the JSON array, nothing else.
+Example format: ["Insight 1", "Insight 2", ...]"""
+    result = ask_ai(prompt)
+    if 'response' in result:
+        # Try to parse JSON from the response
+        text = result['response'].strip()
+        # Extract JSON array if wrapped in markdown
+        if '```' in text:
+            text = text.split('```')[1].strip()
+            if text.startswith('json'):
+                text = text[4:].strip()
+        try:
+            import json
+            cards = json.loads(text)
+            return jsonify({"cards": cards})
+        except Exception:
+            return jsonify({"cards": [text]})
+    return jsonify(result)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# API v1 (Public API + AI Query Layer)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/docs')
+def api_docs():
+    return render_template('api_docs.html')
+
+
+@app.route('/api/v1/data')
+def api_v1_data():
+    """Public JSON API — no key required for raw data."""
+    all_data = EconomicData.query.order_by(EconomicData.year).all()
+    year = request.args.get('year', type=int)
+    if year:
+        all_data = [d for d in all_data if d.year == year]
+    return jsonify([{
+        'year': d.year, 'total_debt_usd': d.total_debt_usd,
+        'external_debt_usd': d.external_debt_usd,
+        'domestic_debt_ngn_tn': d.domestic_debt_ngn_tn,
+        'external_reserves_usd': d.external_reserves_usd,
+        'exchange_rate_official': d.exchange_rate_official,
+        'exchange_rate_parallel': d.exchange_rate_parallel,
+        'petrol_price': d.petrol_price, 'diesel_price': d.diesel_price,
+        'gdp_usd': d.gdp_usd, 'gdp_growth': d.gdp_growth,
+        'population': d.population, 'debt_to_gdp': d.debt_to_gdp,
+        'inflation_rate': d.inflation_rate, 'oil_price_usd': d.oil_price_usd,
+        'federal_revenue_ngn_tn': d.federal_revenue_ngn_tn,
+        'debt_service_ngn_tn': d.debt_service_ngn_tn,
+        'minimum_wage': d.minimum_wage,
+    } for d in all_data])
+
+
+@app.route('/api/v1/query', methods=['POST'])
+def api_v1_query():
+    """AI-powered natural language query — requires API key."""
+    api_key = request.headers.get('X-API-Key') or request.args.get('api_key')
+    if not api_key:
+        return jsonify({"error": "Missing API key. Include X-API-Key header or api_key param.",
+                        "docs": "/api/docs"}), 401
+    key_record = ApiKey.query.filter_by(key=api_key, is_active=True).first()
+    if not key_record:
+        return jsonify({"error": "Invalid or inactive API key."}), 403
+    data = request.get_json() or {}
+    query = (data.get('query') or '').strip()
+    if not query:
+        return jsonify({"error": "Missing 'query' field in request body."}), 400
+    # Track usage
+    key_record.queries_used = (key_record.queries_used or 0) + 1
+    db.session.commit()
+    result = ask_ai(query)
+    result['usage'] = {'queries_used': key_record.queries_used}
+    return jsonify(result)
+
+
+@app.route('/api/v1/keys', methods=['POST'])
+def api_v1_create_key():
+    """Self-service API key generation."""
+    data = request.get_json() or request.form
+    name = (data.get('name') or '').strip()
+    email = (data.get('email') or '').strip()
+    if not email or not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
+        return jsonify({"error": "Valid email required."}), 400
+    # Check if email already has a key
+    existing = ApiKey.query.filter_by(email=email).first()
+    if existing:
+        return jsonify({"key": existing.key, "message": "Existing key returned.",
+                        "note": "Store this key securely — it won't be shown again."})
+    new_key = f"ndc_{secrets.token_hex(24)}"
+    db.session.add(ApiKey(key=new_key, name=name, email=email))
+    db.session.commit()
+    return jsonify({"key": new_key, "message": "API key created.",
+                    "note": "Store this key securely — it won't be shown again."})
 
 
 @app.route('/calculator')

@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}AI Social Cards — Nigeria Debt Clock{% endblock %}
+{% block description %}AI-generated shareable insights about Nigeria's debt{% endblock %}
+
+{% block extra_styles %}
+.aic-container { max-width: 800px; margin: 0 auto; }
+.aic-gen { text-align: center; margin-bottom: 1.5rem; }
+.aic-btn { background: var(--ng-green); color: #fff; border: none; border-radius: var(--radius-sm); padding: 0.65rem 2rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; }
+.aic-btn:hover { opacity: 0.85; }
+.aic-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.aic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1rem; }
+.aic-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: all 0.3s; }
+.aic-card:hover { border-color: var(--ng-green); transform: translateY(-2px); }
+.aic-card-body { padding: 1.5rem; min-height: 120px; display: flex; align-items: center; }
+.aic-card-text { font-size: 0.92rem; font-weight: 600; line-height: 1.6; }
+.aic-card-footer { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.5rem; border-top: 1px solid var(--border); background: rgba(255,255,255,0.02); }
+.aic-card-brand { font-size: 0.65rem; color: var(--text-tertiary); }
+.aic-dl-btn { background: transparent; border: 1px solid var(--border); border-radius: 50px; padding: 0.3rem 0.75rem; font-size: 0.68rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+.aic-dl-btn:hover { border-color: var(--ng-green); color: var(--ng-green); }
+.aic-loading { text-align: center; padding: 3rem; color: var(--text-secondary); }
+.aic-loading i { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(68,138,255,0.1);color:var(--blue);"><i class="bi bi-share"></i></div>
+            <div>
+                <div class="section-title">AI Social Media Cards</div>
+                <div class="section-sub">AI-generated shareable insights — download as images for Twitter, Instagram, WhatsApp</div>
+            </div>
+        </div>
+
+        <div class="aic-container">
+            <div class="aic-gen">
+                <button class="aic-btn" id="genCardsBtn" onclick="generateCards()"><i class="bi bi-lightning"></i> Generate Fresh Insights</button>
+            </div>
+
+            <div id="cardsLoading" class="aic-loading" style="display:none;">
+                <i class="bi bi-arrow-repeat" style="font-size:1.5rem;display:block;margin-bottom:0.75rem;"></i>
+                AI is crafting shareable insights...
+            </div>
+
+            <div class="aic-grid" id="cardsGrid"></div>
+        </div>
+    </div>
+</section>
+<canvas id="cardCanvas" width="600" height="340" style="display:none;"></canvas>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const cardColors = [
+    {bg: '#0a0a0f', accent: '#ff5252', text: '#f0f0f5'},
+    {bg: '#0d1a0d', accent: '#00e676', text: '#f0f0f5'},
+    {bg: '#0f0f1a', accent: '#448aff', text: '#f0f0f5'},
+    {bg: '#1a0f0a', accent: '#ff9100', text: '#f0f0f5'},
+    {bg: '#0a0f1a', accent: '#ffd740', text: '#f0f0f5'},
+    {bg: '#1a0a1a', accent: '#b388ff', text: '#f0f0f5'},
+];
+
+async function generateCards() {
+    const btn = document.getElementById('genCardsBtn');
+    const loading = document.getElementById('cardsLoading');
+    const grid = document.getElementById('cardsGrid');
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite;"></i> Generating...';
+    loading.style.display = '';
+    grid.innerHTML = '';
+
+    try {
+        const res = await fetch('/api/ai-cards', { method: 'POST' });
+        const data = await res.json();
+        loading.style.display = 'none';
+
+        if (data.cards) {
+            data.cards.forEach((text, i) => {
+                const color = cardColors[i % cardColors.length];
+                const card = document.createElement('div');
+                card.className = 'aic-card';
+                card.innerHTML = `
+                    <div class="aic-card-body" style="background:linear-gradient(135deg,${color.bg},${color.accent}12);">
+                        <div class="aic-card-text" style="color:${color.text};">${text}</div>
+                    </div>
+                    <div class="aic-card-footer">
+                        <span class="aic-card-brand"><i class="bi bi-bank"></i> Nigeria Debt Clock</span>
+                        <button class="aic-dl-btn" onclick="downloadCard('${text.replace(/'/g, "\\'")}', '${color.bg}', '${color.accent}')"><i class="bi bi-download"></i> Download</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        } else if (data.error) {
+            grid.innerHTML = '<p style="color:var(--red);text-align:center;padding:2rem;">' + data.error + '</p>';
+        }
+    } catch(e) {
+        loading.style.display = 'none';
+        grid.innerHTML = '<p style="color:var(--red);text-align:center;padding:2rem;">Connection error. Please try again.</p>';
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-lightning"></i> Generate Fresh Insights';
+}
+
+function downloadCard(text, bg, accent) {
+    const c = document.getElementById('cardCanvas');
+    const ctx = c.getContext('2d');
+
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, 600, 340);
+    ctx.fillStyle = accent; ctx.fillRect(0, 0, 600, 4);
+    ctx.fillRect(0, 336, 600, 4);
+
+    // Icon
+    ctx.fillStyle = accent; ctx.font = 'bold 28px sans-serif';
+    ctx.fillText('📊', 30, 50);
+
+    // Text (word wrap)
+    ctx.fillStyle = '#f0f0f5'; ctx.font = '600 22px Inter,sans-serif';
+    const words = text.split(' ');
+    let line = '', y = 100;
+    words.forEach(word => {
+        const test = line + word + ' ';
+        if (ctx.measureText(test).width > 540 && line) {
+            ctx.fillText(line.trim(), 30, y);
+            line = word + ' '; y += 34;
+        } else { line = test; }
+    });
+    ctx.fillText(line.trim(), 30, y);
+
+    // Branding
+    ctx.fillStyle = accent; ctx.fillRect(30, 290, 40, 3);
+    ctx.fillStyle = '#666'; ctx.font = '12px Inter,sans-serif';
+    ctx.fillText('Nigeria Debt Clock · Designed by Place of Ideation', 30, 315);
+
+    const link = document.createElement('a');
+    link.download = 'debt-insight.png';
+    link.href = c.toDataURL();
+    link.click();
+}
+</script>
+{% endblock %}

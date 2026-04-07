@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}API Documentation — Nigeria Debt Clock{% endblock %}
+{% block description %}Public API and AI-powered query endpoint for Nigeria economic data{% endblock %}
+
+{% block extra_styles %}
+.api-container { max-width: 900px; margin: 0 auto; }
+.api-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; }
+.api-section h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+.api-endpoint { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 0.75rem; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; overflow-x: auto; }
+.api-method { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700; font-size: 0.68rem; margin-right: 0.5rem; }
+.api-get { background: rgba(0,230,118,0.15); color: var(--green); }
+.api-post { background: rgba(68,138,255,0.15); color: var(--blue); }
+.api-desc { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 0.75rem; }
+.api-code { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; overflow-x: auto; line-height: 1.6; color: var(--text-secondary); margin-bottom: 0.75rem; white-space: pre; }
+.api-param { display: flex; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border); font-size: 0.75rem; }
+.api-param:last-child { border-bottom: none; }
+.api-param-name { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--gold); min-width: 120px; }
+.api-param-desc { color: var(--text-secondary); }
+.api-key-form { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; margin-top: 1rem; }
+.api-key-form input { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; color: var(--text-primary); font-size: 0.82rem; outline: none; width: 250px; margin-right: 0.5rem; }
+.api-key-form input:focus { border-color: var(--ng-green); }
+.api-key-btn { background: var(--ng-green); color: #fff; border: none; border-radius: var(--radius-sm); padding: 0.5rem 1.25rem; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+.api-key-btn:hover { opacity: 0.85; }
+.api-key-result { margin-top: 0.75rem; font-size: 0.78rem; }
+.api-badge { display: inline-block; font-size: 0.62rem; font-weight: 700; padding: 0.1rem 0.5rem; border-radius: 50px; text-transform: uppercase; letter-spacing: 0.5px; }
+.api-free { background: rgba(0,230,118,0.1); color: var(--green); }
+.api-key-required { background: rgba(255,215,64,0.1); color: var(--gold); }
+.api-try { margin-top: 1rem; }
+.api-try textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; outline: none; min-height: 60px; resize: vertical; }
+.api-try textarea:focus { border-color: var(--ng-green); }
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <div class="section-icon" style="background:rgba(68,138,255,0.1);color:var(--blue);"><i class="bi bi-braces"></i></div>
+            <div>
+                <div class="section-title">API Documentation</div>
+                <div class="section-sub">Access Nigeria economic data programmatically — raw data is free, AI queries require an API key</div>
+            </div>
+        </div>
+
+        <div class="api-container">
+            <!-- Get API Key -->
+            <div class="api-section">
+                <h3><i class="bi bi-key" style="color:var(--gold);"></i> Get Your API Key</h3>
+                <p class="api-desc">Enter your email to receive a free API key. The key gives you access to the AI-powered query endpoint.</p>
+                <div class="api-key-form">
+                    <input type="text" id="apiName" placeholder="Your name">
+                    <input type="email" id="apiEmail" placeholder="your@email.com">
+                    <button class="api-key-btn" onclick="getApiKey()">Get Free Key</button>
+                    <div class="api-key-result" id="apiKeyResult"></div>
+                </div>
+            </div>
+
+            <!-- Endpoint 1: Raw Data -->
+            <div class="api-section">
+                <h3><i class="bi bi-database" style="color:var(--green);"></i> Raw Data <span class="api-badge api-free">Free</span></h3>
+                <div class="api-endpoint"><span class="api-method api-get">GET</span>/api/v1/data</div>
+                <p class="api-desc">Returns all economic data points (1999-2025) as JSON. No authentication required.</p>
+                <div class="api-param"><span class="api-param-name">?year=2024</span><span class="api-param-desc">Optional: filter by specific year</span></div>
+                <div class="api-code">curl https://your-domain.com/api/v1/data?year=2025</div>
+                <details>
+                    <summary style="font-size:0.75rem;color:var(--text-secondary);cursor:pointer;margin-top:0.5rem;">Response fields</summary>
+                    <div style="margin-top:0.5rem;">
+                        <div class="api-param"><span class="api-param-name">total_debt_usd</span><span class="api-param-desc">Total public debt in USD billions</span></div>
+                        <div class="api-param"><span class="api-param-name">external_debt_usd</span><span class="api-param-desc">External debt in USD billions</span></div>
+                        <div class="api-param"><span class="api-param-name">domestic_debt_ngn_tn</span><span class="api-param-desc">Domestic debt in NGN trillions</span></div>
+                        <div class="api-param"><span class="api-param-name">external_reserves_usd</span><span class="api-param-desc">CBN reserves in USD billions</span></div>
+                        <div class="api-param"><span class="api-param-name">exchange_rate_official</span><span class="api-param-desc">Official NGN/USD rate</span></div>
+                        <div class="api-param"><span class="api-param-name">exchange_rate_parallel</span><span class="api-param-desc">Parallel market rate</span></div>
+                        <div class="api-param"><span class="api-param-name">inflation_rate</span><span class="api-param-desc">CPI annual %</span></div>
+                        <div class="api-param"><span class="api-param-name">gdp_usd</span><span class="api-param-desc">GDP in USD billions</span></div>
+                        <div class="api-param"><span class="api-param-name">debt_to_gdp</span><span class="api-param-desc">Debt-to-GDP ratio %</span></div>
+                    </div>
+                </details>
+            </div>
+
+            <!-- Endpoint 2: AI Query -->
+            <div class="api-section">
+                <h3><i class="bi bi-robot" style="color:var(--blue);"></i> AI Query <span class="api-badge api-key-required">API Key Required</span></h3>
+                <div class="api-endpoint"><span class="api-method api-post">POST</span>/api/v1/query</div>
+                <p class="api-desc">Ask any question about Nigeria's economy in natural language. AI responds with data-backed analysis.</p>
+                <div class="api-param"><span class="api-param-name">X-API-Key</span><span class="api-param-desc">Your API key (header)</span></div>
+                <div class="api-param"><span class="api-param-name">query</span><span class="api-param-desc">Your question (JSON body)</span></div>
+                <div class="api-code">curl -X POST https://your-domain.com/api/v1/query \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ndc_your_key_here" \
+  -d '{"query": "How much debt did Buhari add per day?"}'</div>
+
+                <div class="api-try">
+                    <label style="font-size:0.72rem;font-weight:700;color:var(--text-tertiary);display:block;margin-bottom:0.35rem;">Try it live:</label>
+                    <input type="text" id="tryApiKey" placeholder="Your API key" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;color:var(--text-primary);font-size:0.78rem;width:100%;margin-bottom:0.5rem;outline:none;">
+                    <textarea id="tryQuery" placeholder='{"query": "What is Nigeria debt per capita?"}'></textarea>
+                    <button class="api-key-btn" style="margin-top:0.5rem;" onclick="tryApiQuery()">Send Query</button>
+                    <div class="api-code" id="tryResult" style="display:none;margin-top:0.75rem;"></div>
+                </div>
+            </div>
+
+            <!-- Pricing -->
+            <div class="api-section">
+                <h3><i class="bi bi-credit-card" style="color:var(--gold);"></i> Pricing</h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;text-align:center;">
+                        <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:0.35rem;">Free Tier</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:var(--green);">$0</div>
+                        <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:0.5rem;line-height:1.6;">Raw data API (unlimited)<br>AI queries (100/month)<br>Community support</div>
+                    </div>
+                    <div style="background:linear-gradient(135deg,rgba(255,215,64,0.05),var(--bg));border:1px solid rgba(255,215,64,0.2);border-radius:var(--radius-sm);padding:1rem;text-align:center;">
+                        <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--gold);margin-bottom:0.35rem;">Pro (Coming Soon)</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:var(--gold);">$29/mo</div>
+                        <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:0.5rem;line-height:1.6;">Unlimited AI queries<br>Weekly PDF reports<br>Custom analysis<br>Priority support</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function getApiKey() {
+    const name = document.getElementById('apiName').value.trim();
+    const email = document.getElementById('apiEmail').value.trim();
+    const result = document.getElementById('apiKeyResult');
+    if (!email) { result.innerHTML = '<span style="color:var(--red);">Email required.</span>'; return; }
+
+    try {
+        const res = await fetch('/api/v1/keys', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name, email})
+        });
+        const data = await res.json();
+        if (data.key) {
+            result.innerHTML = '<div style="background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.2);border-radius:8px;padding:0.75rem;margin-top:0.5rem;">' +
+                '<div style="font-size:0.72rem;color:var(--green);font-weight:700;margin-bottom:0.35rem;">Your API Key:</div>' +
+                '<code style="font-size:0.85rem;font-weight:700;color:var(--text-primary);word-break:break-all;">' + data.key + '</code>' +
+                '<div style="font-size:0.65rem;color:var(--text-tertiary);margin-top:0.35rem;">' + (data.note || '') + '</div></div>';
+        } else {
+            result.innerHTML = '<span style="color:var(--red);">' + (data.error || 'Error') + '</span>';
+        }
+    } catch(e) {
+        result.innerHTML = '<span style="color:var(--red);">Connection error.</span>';
+    }
+}
+
+async function tryApiQuery() {
+    const key = document.getElementById('tryApiKey').value.trim();
+    const queryText = document.getElementById('tryQuery').value.trim();
+    const resultEl = document.getElementById('tryResult');
+    if (!key || !queryText) { resultEl.style.display=''; resultEl.textContent = 'API key and query required.'; return; }
+
+    let body;
+    try { body = JSON.parse(queryText); } catch(e) { body = {query: queryText}; }
+
+    resultEl.style.display = '';
+    resultEl.textContent = 'Querying...';
+
+    try {
+        const res = await fetch('/api/v1/query', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-API-Key': key},
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        resultEl.textContent = JSON.stringify(data, null, 2);
+    } catch(e) {
+        resultEl.textContent = 'Error: ' + e.message;
+    }
+}
+</script>
+{% endblock %}

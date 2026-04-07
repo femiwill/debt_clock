@@ -473,6 +473,38 @@ makeChart('gdpChart', [ds('GDP',timeline.gdp,'#448aff',0,1)], v=>'$'+v+'B');
 makeChart('debtGdpChart', [ds('Debt/GDP',timeline.debt_to_gdp,'#009401',0,1)], v=>v+'%');
 makeChart('nairaChart', [ds('Purchasing Power',timeline.naira_purchasing_power,'#ffd740',0,1)], v=>'\u20A6'+v);
 
+// AI Explainer (click any ticker card value to get AI explanation)
+document.querySelectorAll('.ticker-card').forEach(card => {
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', async function() {
+        const label = this.querySelector('.tc-label')?.textContent || '';
+        const value = this.querySelector('.tc-value')?.textContent || '';
+        const sub = this.querySelector('.tc-sub')?.textContent || '';
+        const existingPopup = document.getElementById('aiExplainPopup');
+        if (existingPopup) existingPopup.remove();
+
+        const popup = document.createElement('div');
+        popup.id = 'aiExplainPopup';
+        popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-card);border:1px solid var(--ng-green);border-radius:12px;padding:1.5rem;max-width:450px;width:90%;z-index:1000;box-shadow:0 16px 48px rgba(0,0,0,0.5);';
+        popup.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;"><span style="font-size:0.75rem;font-weight:700;color:var(--ng-green);"><i class="bi bi-robot"></i> AI Explainer</span><button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:1.2rem;">&times;</button></div><div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6;" id="explainContent"><i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite;"></i> Analyzing...</div>';
+        document.body.appendChild(popup);
+
+        try {
+            const res = await fetch('/api/explain', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({metric: label, value: value, year: '2025'})
+            });
+            const data = await res.json();
+            document.getElementById('explainContent').innerHTML = data.response ?
+                data.response.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>') :
+                '<span style="color:var(--red);">' + (data.error || 'Error') + '</span>';
+        } catch(e) {
+            document.getElementById('explainContent').innerHTML = '<span style="color:var(--red);">Connection error.</span>';
+        }
+    });
+});
+
 // Rotating facts
 (function(){
     const facts = {{ debt_facts | tojson }};

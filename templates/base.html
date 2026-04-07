@@ -151,7 +151,10 @@
             <a href="/calculator" class="{% if '/calculator' in request.path %}active{% endif %}"><i class="bi bi-calculator"></i> Calculator</a>
             <a href="/chart-builder" class="{% if '/chart-builder' in request.path %}active{% endif %}"><i class="bi bi-sliders"></i> Chart Builder</a>
             <a href="/glossary" class="{% if '/glossary' in request.path %}active{% endif %}"><i class="bi bi-book"></i> Glossary</a>
+            <a href="/chat" class="{% if '/chat' in request.path %}active{% endif %}" style="color:var(--ng-green);"><i class="bi bi-robot"></i> AI Chat</a>
+            <a href="/what-if" class="{% if '/what-if' in request.path %}active{% endif %}"><i class="bi bi-lightning"></i> What-If</a>
             <a href="/quiz" class="{% if '/quiz' in request.path %}active{% endif %}"><i class="bi bi-question-circle"></i> Quiz</a>
+            <a href="/api/docs" class="{% if '/api/docs' in request.path %}active{% endif %}"><i class="bi bi-braces"></i> API</a>
         </div>
     </div>
 </nav>
@@ -173,6 +176,13 @@
         </div>
     </div>
 </section>
+
+<!-- Floating AI Chat Button -->
+{% if '/chat' not in request.path %}
+<a href="/chat" id="chatFab" style="position:fixed;bottom:1.5rem;right:1.5rem;width:52px;height:52px;border-radius:50%;background:var(--ng-green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.3rem;box-shadow:0 4px 16px rgba(0,148,1,0.4);text-decoration:none;z-index:999;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="Ask AI about Nigeria's debt">
+    <i class="bi bi-robot"></i>
+</a>
+{% endif %}
 
 <footer class="footer">
     <div class="container">
